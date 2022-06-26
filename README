@@ -18,3 +18,9 @@ lobby -> hold players in same game until host presses start
 Game Specific:
 Game server / networking
 Actual Game GUI and logic
+
+
+
+
+Graphics:
+https://cs.lmu.edu/~ray/notes/introjavascriptgraphics/
