@@ -1,0 +1,20 @@
+
+
+Over network:
+
+send full game state
+send parts of game state that changed
+
+
+
+GameState -> full game state
+GameAction -> action type and params
+
+
+General Code:
+menu screen -> host game / join game
+lobby -> hold players in same game until host presses start
+
+Game Specific:
+Game server / networking
+Actual Game GUI and logic
