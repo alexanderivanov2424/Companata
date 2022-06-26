@@ -1,4 +1,35 @@
 
+Notes::
+
+
+backend: (need websockets)
+python - quart , flask
+nodejs - socket.io  *** start here
+
+
+
+
+Server:
+full game state + logic
+on any change:
+    send full state to all clients
+
+broadcastGameState() send gamestate json to all clients
+
+Clients:
+ - send actions to server
+
+drawGameState()
+sendAction() send Json to server
+
+
+
+
+
+
+
+
+
 
 Over network:
 

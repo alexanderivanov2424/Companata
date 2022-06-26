@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Lobby</title>
+  </head>
+
+  <body>
+    <ul id="players"></ul>
+    <button id="join">Join Lobby</button>
+    <button id="start" disabled>Start Game</button>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+
+      var localUsername = undefined;
+
+      const players = document.getElementById("players");
+      const joinButton = document.getElementById("join");
+      const startButton = document.getElementById("start");
+
+      joinButton.addEventListener('click', () => {
+        socket.emit('join');
+      });
+
+      startButton.addEventListener('click', () => {
+        socket.emit('start game');
+      });
+
+      socket.on('update client username', function(username) {
+        localUsername = username;
+      });
+
+      socket.on('update lobby list', function(lobby) {
+        startButton.disabled = lobby.length === 0 || localUsername !== lobby[0];
+      });
+
+      socket.on('user joined lobby', function(username) {
+        const item = document.createElement('li');
+        item.innerText = username;
+        players.appendChild(item);
+      });
+
+      socket.on('switch to', function(url) {
+        window.location.replace(url);
+      });
+
+    </script>
+  </body>
+</html>
