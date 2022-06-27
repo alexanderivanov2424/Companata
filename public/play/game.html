@@ -11,12 +11,12 @@
     <script>
       const socket = io();
 
-      socket.on('state update', counter => {
+      socket.on('state update', (counter) => {
         console.log('recieved update' + counter);
         button.textContent = counter;
       });
 
-      socket.on('redirect', url => {
+      socket.on('redirect', (url) => {
         window.location.replace(url);
       });
     </script>

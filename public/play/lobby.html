@@ -27,23 +27,23 @@
         socket.emit('start game');
       });
 
-      socket.on('update client username', username => {
+      socket.on('update client username', (username) => {
         localUsername = username;
       });
 
-      socket.on('update lobby list', lobby => {
+      socket.on('update lobby list', (lobby) => {
         const host = lobby[0];
         const isHost = host && localUsername === host;
         startButton.disabled = !isHost;
 
-        players.replaceChildren(...lobby.map(username => {
+        players.replaceChildren(...lobby.map((username) => {
           const item = document.createElement('li');
           item.innerText = username;
           return item;
         }));
       });
 
-      socket.on('redirect', url => {
+      socket.on('redirect', (url) => {
         window.location.replace(url);
       });
     </script>
