@@ -1,112 +1,137 @@
+const path = require('path');
+const { createServer } = require('http');
+
 const express = require('express');
+const session = require('express-session');
+const bodyParser = require('body-parser');
+const { Server } = require('socket.io');
+
+
 const app = express();
-const http = require('http');
-const server = http.createServer(app);
-const { Server } = require("socket.io");
-const { parse, serialize } = require("cookie");
+const server = createServer(app);
+
+const sessionMiddleware = session({
+    secret: 'dontcare',
+    resave: false,
+    saveUninitialized: false,
+});
+
+// -------------- Express Middleware --------------
+
+app.use(sessionMiddleware);
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// redirect any path under /play to login page if not logged in
+app.use('/play', (req, res, next) => {
+    const sessionId = req.session.id;
+    const username = sessionIdToUsername.get(sessionId);
+    console.log(`${sessionId} => ${username}`);
+    req.session.username = username;
+    if (username) {
+        next();
+    } else {
+        console.log('redirecting to login');
+        res.redirect('/');
+    }
+});
+
+// serve static files in /public directory
+app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
+
+// -------------- Express Routes ------------------
+
+app.post('/login', (req, res) => {
+    const { username } = req.body;
+    const sessionId = req.session.id;
+
+    if (!usernameToSessionId.has(username)) {
+        console.log(`Login from ${sessionId} with name ${username}`);
+        sessionIdToUsername.set(sessionId, username);
+        usernameToSessionId.set(username, sessionId);
+
+        req.session.username = username;
+        res.redirect('/play/lobby');
+    } else {
+        res.redirect('/error');
+    }
+});
+
+app.post('/logout', (req, res) => {
+    const sessionId = req.session.id;
+    const username = sessionIdToUsername.get(sessionId);
+
+    console.log(`Logout from ${sessionId} with name ${username}`);
+    sessionIdToUsername.delete(sessionId, username);
+    usernameToSessionId.delete(username, sessionId);
+
+    req.session.destroy(() => {
+        // disconnect all Socket.IO connections linked to this session ID
+        io.to(sessionId).disconnectSockets();
+        res.status(204).end();
+    });
+});
+
+// -------------- Server State --------------------
+
+const sessionIdToUsername = new Map();
+const usernameToSessionId = new Map();
+
+const lobby = [];
+
+// -------------- Socket.IO Events ----------------
+
 const io = new Server(server);
 
-
-var PlayerIdToUsername = new Map();
-var UsernameToPlayerId = new Map();
-
-
-var lobby = [];
-var hostUsername;
-
-
-app.get('/', function (req, res) { 
-    res.sendFile(__dirname + '/login.html');
-});
-
-app.get('/login', function (req, res) { 
-    res.sendFile(__dirname + '/login.html');
-});
-
-app.get('/lobby', function (req, res) {
-    res.sendFile(__dirname + '/lobby.html');
-});
-
-app.get('/game', function (req, res) {
-    res.sendFile(__dirname + '/index.html');
-});
-
-io.engine.on("initial_headers", (headers, req) => {
-    const cookies = parse(req.headers.cookie || "");
-    if(cookies.PlayerID == undefined){
-        var randomNumber=Math.random().toString();
-        randomNumber=randomNumber.substring(2,randomNumber.length);
-        const cookieData = serialize("PlayerID", randomNumber, { sameSite: "strict" });
-        req.headers.cookie = cookieData;
-        console.log('Cookie Set: ' + randomNumber);
-        headers["set-cookie"] = cookieData;
-    } 
-});
+io.use((socket, next) => sessionMiddleware(socket.request, {}, next));
 
 io.on('connection', (socket) => {
-    const cookies = parse(socket.request.headers.cookie || "");
-    const PlayerID = cookies.PlayerID;
-    
-    console.log(`Connection from ${PlayerID}`);
+    const req = socket.request;
+    const sessionId = req.session.id;
+    const username = sessionIdToUsername.get(sessionId);
+
+    console.log(`Connection from ${username}`);
 
     socket.on('disconnect', () => {
-        console.log(`${PlayerID} disconnected`);
+        console.log(`${username} disconnected`);
 
-        // Lobby update
-        if(PlayerIdToUsername.has(PlayerID)){
-            const username = PlayerIdToUsername.get(PlayerID);
-            const index = lobby.indexOf(username);
-            if (index > -1) {
-                lobby.splice(index, 1);
-            }
-            io.emit('update lobby list', lobby);
+        // Remove disconnected player from the lobby list if already joined
+        const index = lobby.indexOf(username);
+        if (index !== -1) {
+            lobby.splice(index, 1);
         }
+        io.emit('update lobby list', lobby);
+    });
+
+    socket.emit('update client username', username);
+    io.emit('update lobby list', lobby);
+
+    socket.join(sessionId);
+
+    socket.use((_, next) => {
+        req.session.reload((err) => {
+            if (err) {
+                socket.disconnect();
+            } else {
+                next();
+            }
+        });
     });
 
     socket.onAny((event, ...args) => {
         console.log(event, args);
     });
 
-    //Login Socket Events
-
-    socket.on('login', (username) => {
-        if(PlayerIdToUsername.has(PlayerID)){
-            const username = PlayerIdToUsername.get(PlayerID);
-            console.log(`Login from ${PlayerID} with name ${username}`);
-            socket.emit('switch to', '/game');
-        } else if(UsernameToPlayerId.has(username)){
-            socket.emit('error', 'username taken');
-        } else {
-            console.log(`Login from ${PlayerID} with name ${username}`);
-            PlayerIdToUsername.set(PlayerID, username);
-            UsernameToPlayerId.set(username, PlayerID);
-            socket.emit('switch to', '/lobby');
-        }
-    });
-
-    //Lobby Socket Events
-
-    function isValidLogin(socket){
-        if(!PlayerIdToUsername.has(PlayerID)){
-            socket.emit('switch to', '/login');
-            return false;
-        }
-        return true;
-    } 
-
     socket.on('join', () => {
-        if(!isValidLogin(socket)) return;
-        username = PlayerIdToUsername.get(PlayerID);
-        lobby.push(username);
-        socket.emit('update client username', username);
-        io.emit('update lobby list', lobby);
+        if (!lobby.includes(username)) {
+            lobby.push(username);
+            io.emit('update lobby list', lobby);
+        }
     })
 
     socket.on('start game', () => {
-        if(!isValidLogin(socket)) return;
-        username = PlayerIdToUsername.get(PlayerID);
-        if(lobby.indexOf(username) == 0){
-            socket.emit('switch to', '/game');
+        const host = lobby[0];
+        if (username === host) {
+            io.emit('redirect', '/play/game');
         }
     })
 
@@ -114,5 +139,5 @@ io.on('connection', (socket) => {
 
 
 server.listen(8000, () => {
-  console.log('listening on *:8000');
+    console.log('listening on *:8000');
 });

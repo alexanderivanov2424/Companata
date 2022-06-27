@@ -5,20 +5,20 @@
   </head>
 
   <body></body>
-    <button id="join">This is the Game</button>
+    <button>This is the Game</button>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
       const socket = io();
 
-      socket.on('state update', function(counter) {
+      socket.on('state update', counter => {
         console.log('recieved update' + counter);
         button.textContent = counter;
       });
 
-      socket.on('switch to', function(url) {
+      socket.on('redirect', url => {
         window.location.replace(url);
       });
-
     </script>
   </body>
 </html>
