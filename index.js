@@ -25,12 +25,12 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/play', (req, res, next) => {
   const sessionId = req.session.id;
   const username = sessionIdToUsername.get(sessionId);
-  console.log(`${sessionId} => ${username}`);
+
   req.session.username = username;
   if (username) {
     next();
   } else {
-    console.log('redirecting to login');
+    console.log(`redirecting session ${sessionId} to login page`);
     res.redirect('/');
   }
 });
@@ -41,17 +41,18 @@ app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] })
 // -------------- Express Routes ------------------
 
 app.post('/login', (req, res) => {
-  const { username } = req.body;
   const sessionId = req.session.id;
+  const { username } = req.body;
 
   if (!usernameToSessionId.has(username)) {
-    console.log(`Login from ${sessionId} with name ${username}`);
+    console.log(`${username} logged in from session ${sessionId}`);
     sessionIdToUsername.set(sessionId, username);
     usernameToSessionId.set(username, sessionId);
 
     req.session.username = username;
     res.redirect('/play/lobby');
   } else {
+    console.log(`username ${username} is taken`);
     res.redirect('/error');
   }
 });
@@ -60,7 +61,7 @@ app.post('/logout', (req, res) => {
   const sessionId = req.session.id;
   const username = sessionIdToUsername.get(sessionId);
 
-  console.log(`Logout from ${sessionId} with name ${username}`);
+  console.log(`${username} logged out from session ${sessionId}`);
   sessionIdToUsername.delete(sessionId, username);
   usernameToSessionId.delete(username, sessionId);
 
@@ -89,7 +90,7 @@ io.on('connection', (socket) => {
   const sessionId = req.session.id;
   const username = sessionIdToUsername.get(sessionId);
 
-  console.log(`Connection from ${username}`);
+  console.log(`${username} connected`);
 
   socket.on('disconnect', () => {
     console.log(`${username} disconnected`);
