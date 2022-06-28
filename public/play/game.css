@@ -6,6 +6,9 @@ body {
   width: 600px;
   height: 600px;
   position: relative;
+  margin: 0 auto;
+  border: 1px solid black;
+  border-radius: 50%;
 }
 
 #center {
@@ -24,12 +27,24 @@ body {
   background: #f00;
 }
 
+.player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+}
+
 .player-name {
   text-align: center;
   position: relative;
 }
 
-.coin_stack {
+.wallet {
+  display: flex;
+  flex-direction: row;
+}
+
+.coin-stack {
   width: 20px;
   height: 20px;
   position: relative;
@@ -37,28 +52,34 @@ body {
 }
 
 .coin {
+  width: 20px;
+  height: 20px;
+  text-align: center;
   position: relative;
   border-radius: 50%;
 }
 
-.coin_0 {
+.coin-0 {
   background-color: blue;
 }
 
-.coin_5 {
+.coin-5 {
   background-color: red;
 }
 
-.coin_10 {
+.coin-10 {
   background-color: yellow;
 }
 
-.coin_25 {
+.coin-25 {
   background-color: green;
 }
 
-.coin_50 {
+.coin-50 {
   background-color: purple;
 }
 
-.item {}
+.pouch {
+  display: flex;
+  flex-direction: row;
+}
