@@ -2,16 +2,174 @@
 <html>
   <head>
     <title>Game</title>
+    <link rel="stylesheet" href="game.css">
   </head>
 
   <body></body>
-    <button>This is the Game</button>
+    <button>This is the Game</button> <!--Essential to all function DO NOT DELETE-->
+    <div id="root"></div>
+    <!-- <div id="table">
+        <div id="center"></div>
+    </div> -->
+
+    <!--
 
     <script src="/socket.io/socket.io.js"></script>
-    <script>
+    
+      
+      <script>
+
+
+      let state = {
+        players: [
+          {
+            name: "Joe",
+            coins: {
+              0: 1, // 0s
+              5: 2, // 5s
+              10: 3, // 10s
+              25: 4, // 25s
+              50: 5, // 50s
+            },
+            items: {
+              ice: 4,
+            }
+          },
+          {
+            name: "Bob",
+            coins: {
+              0: 0, // 0s
+              5: 0, // 5s
+              10: 0, // 10s
+              25: 0, // 25s
+              50: 0, // 50s
+            },
+            items: {},
+          },
+          {
+            name: "Alice",
+            coins: {
+              0: 0, // 0s
+              5: 0, // 5s
+              10: 0, // 10s
+              25: 0, // 25s
+              50: 0, // 50s
+            },
+            items: {},
+          },
+          {
+            name: "Willy",
+            coins: {
+              0: 0, // 0s
+              5: 0, // 5s
+              10: 0, // 10s
+              25: 0, // 25s
+              50: 0, // 50s
+            },
+            items: {},
+          },
+        ],
+      }
+
+      
+      let playerNameToSeat = new Map();
+
+      //#####################
+
+      const gamebutton = document.getElementById("join");
+
+      function createSeats() {
+          numPlayers = state.players.length;
+          var seats = document.querySelectorAll('.seat');
+          seats.forEach(seat => {
+            seat.remove();
+          });
+          var container = document.querySelector('#table');
+          for(var i = 0; i < numPlayers; i++) {
+            const seat = document.createElement('div');
+            seat.classList.add('seat');
+            
+            const player_name = document.createElement('p');
+            player_name.classList.add('player_name');
+            player_name.textContent = state.players[i].name;
+
+            const stack_0 = document.createElement('ul');
+            stack_0.classList.add('coin_stack');
+
+            const stack_5 = document.createElement('ul');
+            stack_5.classList.add('coin_stack');
+
+            const stack_10 = document.createElement('ul');
+            stack_10.classList.add('coin_stack');
+
+            const stack_25 = document.createElement('ul');
+            stack_25.classList.add('coin_stack');
+
+            const stack_50 = document.createElement('ul');
+            stack_50.classList.add('coin_stack');
+
+            playerNameToSeat.set(state.players[i].name, {
+              seat,
+              stacks: [stack_0, stack_5, stack_10, stack_25, stack_50],
+            });
+
+            seat.appendChild(player_name);
+            seat.appendChild(stack_0);
+            seat.appendChild(stack_5);
+            seat.appendChild(stack_10);
+            seat.appendChild(stack_25);
+            seat.appendChild(stack_50);
+            container.appendChild(seat);
+          }
+      }
+
+      function css(element, style) {
+          for (const property in style)
+              element.style[property] = style[property];
+      }
+
+      function distributeFields() {
+        var radius = 200;
+        var seats = document.querySelectorAll('.seat');
+        var container = document.querySelector('#table');
+        var width = container.getBoundingClientRect().width;
+        var height = container.getBoundingClientRect().height;
+        var step = (2*Math.PI) / seats.length;
+
+        [...playerNameToSeat.entries()].forEach(([playerName, { seat, stacks }], i) => {
+          var angle = -step * i;
+          const player = seat.querySelector(".player_name");
+          player.style.transform = 'translate(0px,20px) rotate(' + (angle) + 'rad)';
+
+          var x = Math.round(width/2 + radius * Math.cos(angle) - seat.getBoundingClientRect().width/2);
+          var y = Math.round(height/2 + radius * Math.sin(angle) - seat.getBoundingClientRect().height/2);
+          seat.style.left = y + 'px';
+          seat.style.top = x + 'px';
+          seat.style.transform = 'rotate(' + (-angle) + 'rad)';
+
+          stack_angle = 10;
+          for(var j = -2; j <= 2; j++){
+            stacks[i].style.top = 10 + 'px';
+            stacks[i].style.transform = 'rotate(' + (j * stack_angle) + 'deg)';
+
+            stacks[i].appendChild
+          }
+
+        });
+      }
+
+      function populateMoney(player_name, coin_0, coin_5, coin_10, coin_25, coin_50){
+        const seat = document.querySelector(`[data-id="${playername}"]`);
+
+      }
+
+      createSeats(["Joe", "Bob", "Albert", "William"]);
+      distributeFields();
+      //#####################
+
       const socket = io();
 
-      socket.on('state update', (counter) => {
+      socket.on('game.update.state', (counter) => {
         console.log('recieved update' + counter);
         button.textContent = counter;
       });
@@ -20,5 +178,13 @@
         window.location.replace(url);
       });
     </script>
+
+  -->
+
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="game_screen.js" type="text/babel"></script>
   </body>
 </html>

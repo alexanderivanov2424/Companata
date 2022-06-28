@@ -1,0 +1,64 @@
+body {
+  padding: 2em;
+}
+
+#table {
+  width: 600px;
+  height: 600px;
+  position: relative;
+}
+
+#center {
+  width: 10px;
+  height: 10px;
+  position: absolute;
+  left: 295px;
+  top: 295px;
+  background: #000;
+}
+
+.seat {
+  width: 20px;
+  height: 20px;
+  position: absolute;
+  background: #f00;
+}
+
+.player-name {
+  text-align: center;
+  position: relative;
+}
+
+.coin_stack {
+  width: 20px;
+  height: 20px;
+  position: relative;
+  background: rgb(24, 199, 36);
+}
+
+.coin {
+  position: relative;
+  border-radius: 50%;
+}
+
+.coin_0 {
+  background-color: blue;
+}
+
+.coin_5 {
+  background-color: red;
+}
+
+.coin_10 {
+  background-color: yellow;
+}
+
+.coin_25 {
+  background-color: green;
+}
+
+.coin_50 {
+  background-color: purple;
+}
+
+.item {}
