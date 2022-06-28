@@ -24,34 +24,19 @@ sendAction() send Json to server
 
 
 
+How to Run (bc I forget):
+
+1) Ngrok
+If you just have ngrok downloaded as an exe:
+ - navigate to ngrok path (probably in downloads)
+ - run ngrok.exe
+ - run command: ngrok http 8000
+If you have ngrok in your path like a normal person:
+ - run command: ngrok http 8000
 
 
-
-
-
-
-
-Over network:
-
-send full game state
-send parts of game state that changed
-
-
-
-GameState -> full game state
-GameAction -> action type and params
-
-
-General Code:
-menu screen -> host game / join game
-lobby -> hold players in same game until host presses start
-
-Game Specific:
-Game server / networking
-Actual Game GUI and logic
-
-
-
+2) Server
+node index.js
 
 Graphics:
 https://cs.lmu.edu/~ray/notes/introjavascriptgraphics/

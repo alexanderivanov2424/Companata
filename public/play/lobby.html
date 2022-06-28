@@ -20,18 +20,18 @@
       const startButton = document.getElementById("start");
 
       joinButton.addEventListener('click', () => {
-        socket.emit('join');
+        socket.emit('lobby.join');
       });
 
       startButton.addEventListener('click', () => {
-        socket.emit('start game');
+        socket.emit('lobby.start_game');
       });
 
-      socket.on('update client username', (username) => {
+      socket.on('lobby.update.client_username', (username) => {
         localUsername = username;
       });
 
-      socket.on('update lobby list', (lobby) => {
+      socket.on('lobby.update.lobby_list', (lobby) => {
         const host = lobby[0];
         const isHost = host && localUsername === host;
         startButton.disabled = !isHost;

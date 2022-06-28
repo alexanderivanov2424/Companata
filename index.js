@@ -100,11 +100,11 @@ io.on('connection', (socket) => {
     if (index !== -1) {
       lobby.splice(index, 1);
     }
-    io.emit('update lobby list', lobby);
+    io.emit('lobby.update.lobby_list', lobby);
   });
 
-  socket.emit('update client username', username);
-  io.emit('update lobby list', lobby);
+  socket.emit('lobby.update.client_username', username);
+  io.emit('lobby.update.lobby_list', lobby);
 
   socket.join(sessionId);
 
@@ -122,14 +122,14 @@ io.on('connection', (socket) => {
     console.log(event, args);
   });
 
-  socket.on('join', () => {
+  socket.on('lobby.join', () => {
     if (!lobby.includes(username)) {
       lobby.push(username);
-      io.emit('update lobby list', lobby);
+      io.emit('lobby.update.lobby_list', lobby);
     }
   })
 
-  socket.on('start game', () => {
+  socket.on('lobby.start_game', () => {
     const host = lobby[0];
     if (username === host) {
       io.emit('redirect', '/play/game');
