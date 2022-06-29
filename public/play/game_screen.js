@@ -1,7 +1,7 @@
 /*
 Phases:
 ActionSelection - select if next phase is Bidding (big for what is on the stand) or Targeting (target another players item)
-Bidding - if stand emtpy new item is added, everyone except current turn bids for item(s) on stand
+Bidding - new item is added to stand, everyone except current turn bids for item(s) on stand
 PayPass - current turn either buys item on stand or gives it to target but takes money
 Targeting - current turn selects whos item they want to target
 Versus - current turn and target each place bids for items on stand
@@ -9,10 +9,31 @@ Versus - current turn and target each place bids for items on stand
 maybe some explicit animation phases so that there is time to play animations? these can probably be added later as needed.
 
 */
+const ACTION_SELECTION = "ActionSelection"
+const BIDDING = "Bidding"
+const PAY_PASS = "PayPass"
+const TARGETING = "Targeting"
+const VERSUS = "Versus"
+
+const owner = "Joe";
+
+
+//TODO add to state:
+// players that canceled bids
+// turn counter
+// fix stand to be dict of item to amount
+// items in the stash
+// visibility for versus
+// targeting highlight items you can take
+
+// Extra features
+// visibility (later)
+// animations
+// legend for the items (maybe hover text)
 
 
 const state = {
-  turn: "Alice",
+  turn: "Joe",
   phase: "ActionSelection",
   stand: [ //can be 1 or two things
     "ice" 
@@ -34,11 +55,11 @@ const state = {
         bread: 2
       },
       pot: {
-        v0: 1,
-        v5: 2,
+        v0: 5,
+        v5: 4,
         v10: 3,
-        v25: 4,
-        v50: 5,
+        v25: 2,
+        v50: 1,
       },
     },
     {
@@ -47,7 +68,7 @@ const state = {
         v0: 0,
         v5: 0,
         v10: 0,
-        v25: 0,
+        v25: 2,
         v50: 0,
       },
       items: {
@@ -57,7 +78,7 @@ const state = {
       pot: {
         v0: 0,
         v5: 0,
-        v10: 0,
+        v10: 2,
         v25: 0,
         v50: 0,
       },
@@ -73,18 +94,18 @@ const state = {
       },
       items: {},
       pot: {
-        v0: 0,
+        v0: 1,
         v5: 0,
         v10: 0,
-        v25: 0,
-        v50: 0,
+        v25: 7,
+        v50: 9,
       },
     },
     {
       name: "Willy",
       wallet: {
         v0: 0,
-        v5: 0,
+        v5: 1,
         v10: 0,
         v25: 0,
         v50: 0,
@@ -92,7 +113,7 @@ const state = {
       items: {},
       pot: {
         v0: 0,
-        v5: 0,
+        v5: 2,
         v10: 0,
         v25: 0,
         v50: 0,
@@ -101,40 +122,106 @@ const state = {
   ],
 }
 
-//TODO buttons need to be hidden / shown on respective phases
-function TargetingButton({}){} //button to enter Targeting phase
+// TODO: buttons need to be hidden / shown on respective phases
+function TargetingButton() { // button to enter Targeting phase
+  return <button className="button button-targeting">Targeting</button>;
+}
 
-function SubmitBidButton({}){} //button to submit secret bid amount in Targeting phase
+function SubmitBidButton() { // button to submit secret bid amount in Targeting phase
+  return <button className="button button-submit">Submit</button>;
+}
 
-function BiddingButton({}){} //button to ender Bidding phase
+function BiddingButton() { // button to ender Bidding phase
+  return <button className="button button-bidding">Bidding</button>;
+}
 
-function PayBidButton({}){} //pay bid amount for item
+function PayButton() { // pay bid amount for item
+  return <button className="button button-pay">Pay</button>;
+}
 
-function TakePotButton({}){} //take bid amount but no item
+function PassButton() { // take bid amount but no item
+  return <button className="button button-pass">Pass</button>;
+}
 
-function CancelBid({}){} //button to retract bid (durring Bidding phase)
+function CancelBid() { // button to retract bid (during Bidding or Versus phase)
+  return <button className="button button-cancel">Cancel</button>;
+}
 
-function Stand({}){ // where items in question are placed
+function ButtonBox({ owner, phase, turn, target }) { // horizontal box to hold buttons
+  let buttons = [];
+  switch (phase) {
+    case ACTION_SELECTION:
+      if (owner === turn) {
+        buttons = [<TargetingButton />, <BiddingButton />];
+      }
+      break;
+    case BIDDING:
+      if (owner === turn || owner === target) {
+        buttons = [<CancelBid />];
+      }
+      break;
+    case PAY_PASS:
+      if (owner === turn) {
+        buttons = [<PayButton />, <PassButton />];
+      }
+      break;
+    case TARGETING:
+      // TODO: buttons for items?
+      break;
+    case VERSUS:
+      if (owner === turn || owner === target) {
+        buttons = [<CancelBid />];
+      }
+      break;
+    default:
+      console.error(`unrecognized phase ${phase}`);
+      break;
+  }
+
+  return (
+    <div className="button-box">
+      {buttons}
+    </div>
+  );
+} 
+
+function Stand({}) { // where items in question are placed
  //TODO horizontal box, will only ever hold one or two items
 }
 
-function Middle({}){ // the middle of the table
- //TODO ring of wallets around to represent what everyone is bidding
- //TODO stand in the middle to attach items to
+function Middle({ players }) { // the middle of the table
+  return (
+    <div className="middle">
+      {players.map(({ pot }, i) => (
+        <Seat
+          inner radius={100}
+          angle={(2 * Math.PI) / players.length * i}
+          key={i}
+        >
+          <Wallet {...pot} />
+        </Seat>
+      ))}
+    </div>
+  );
 }
 
-function Coin({ value, pos}) {
+function Coin({ value }) {
   return <div className={`coin coin-${value}`}>{value}</div>;
 }
 
-function CoinStack({ value, amount }) { //TODO need to overlap coins to fit
+function CoinStack({ value, amount }) { // TODO: need to overlap coins to fit
+  const coinSize = 20;
+  const maxStackSize = 80;
+  const shift = amount > 4 ? (maxStackSize - amount * coinSize) / (amount - 1) : 0;
   return (
     <div className="coin-stack">
       {new Array(amount).fill().map((_, i) => (
-          <Coin value={value} key={i} />
-        ))}
+        <div style={{ marginTop: i === 0 ? 0 : shift }} key={i}>
+          <Coin value={value} />
+        </div>
+      ))}
     </div>
-  );  
+  );
 }
 
 function Wallet({ v0, v5, v10, v25, v50 }) {
@@ -168,39 +255,44 @@ function PlayerName({ name }) {
 }
 
 function Player({ name, wallet, items }) {
-  console.log(wallet);
   return (
     <div className="player">
-      <Wallet v0={wallet.v0} v5={wallet.v5} v10={wallet.v10} v25={wallet.v25} v50={wallet.v50}/>
+      <Wallet {...wallet} />
       <PlayerName name={name} />
       <Pouch items={items} />
     </div>
   );
 }
 
-function GameScreen({ players }) {
-  const radius = 200;
-
+function Seat({ inner, radius, angle, children }) {
   return (
-    <div id="table">
-      {players.map((playerProps, i) => {
-        const angle = (2 * Math.PI) / players.length * i;
+    <div
+      className="seat"
+      style={{
+        transform: `rotate(${angle}rad) translate(-50%, ${radius}px) ${inner ? '' : 'translateY(-100%)'}`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
-        return (
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transformOrigin: '0 0',
-              transform: `rotate(${angle}rad) translateY(${radius}px)`,
-            }}
+function GameScreen({ turn, phase, stand, target, timer, players }) {
+  return (
+    <div className="room">
+      <div className="table">
+        {players.map((playerProps, i) => (
+          <Seat
+            radius={400}
+            angle={(2 * Math.PI) / players.length * i}
             key={i}
           >
             <Player {...playerProps} />
-          </div>
-        );
-      })}
+          </Seat>
+        ))}
+        <Middle players={players} />
+      </div>
+      <ButtonBox owner={owner} phase={phase} turn={turn} target={target} />
     </div>
   );
 }
