@@ -1,4 +1,24 @@
+/*
+Phases:
+ActionSelection - select if next phase is Bidding (big for what is on the stand) or Targeting (target another players item)
+Bidding - if stand emtpy new item is added, everyone except current turn bids for item(s) on stand
+PayPass - current turn either buys item on stand or gives it to target but takes money
+Targeting - current turn selects whos item they want to target
+Versus - current turn and target each place bids for items on stand
+
+maybe some explicit animation phases so that there is time to play animations? these can probably be added later as needed.
+
+*/
+
+
 const state = {
+  turn: "Alice",
+  phase: "ActionSelection",
+  stand: [ //can be 1 or two things
+    "ice" 
+  ],
+  target: "", //person who bid the most or target in Targeting phase
+  timer: 0,
   players: [
     {
       name: "Joe",
@@ -11,7 +31,15 @@ const state = {
       },
       items: {
         ice: 4,
-      }
+        bread: 2
+      },
+      pot: {
+        v0: 1,
+        v5: 2,
+        v10: 3,
+        v25: 4,
+        v50: 5,
+      },
     },
     {
       name: "Bob",
@@ -22,18 +50,35 @@ const state = {
         v25: 0,
         v50: 0,
       },
-      items: {},
-    },
-    {
-      name: "Alice",
-      wallet: {
+      items: {
+        rock: 2,
+        bread: 2
+      },
+      pot: {
         v0: 0,
         v5: 0,
         v10: 0,
         v25: 0,
         v50: 0,
       },
+    },
+    {
+      name: "Alice",
+      wallet: {
+        v0: 0,
+        v5: 0,
+        v10: 4,
+        v25: 0,
+        v50: 0,
+      },
       items: {},
+      pot: {
+        v0: 0,
+        v5: 0,
+        v10: 0,
+        v25: 0,
+        v50: 0,
+      },
     },
     {
       name: "Willy",
@@ -45,18 +90,51 @@ const state = {
         v50: 0,
       },
       items: {},
+      pot: {
+        v0: 0,
+        v5: 0,
+        v10: 0,
+        v25: 0,
+        v50: 0,
+      },
     },
   ],
 }
 
-function Coin({ value }) {
+//TODO buttons need to be hidden / shown on respective phases
+function TargetingButton({}){} //button to enter Targeting phase
+
+function SubmitBidButton({}){} //button to submit secret bid amount in Targeting phase
+
+function BiddingButton({}){} //button to ender Bidding phase
+
+function PayBidButton({}){} //pay bid amount for item
+
+function TakePotButton({}){} //take bid amount but no item
+
+function CancelBid({}){} //button to retract bid (durring Bidding phase)
+
+function Stand({}){ // where items in question are placed
+ //TODO horizontal box, will only ever hold one or two items
+}
+
+function Middle({}){ // the middle of the table
+ //TODO ring of wallets around to represent what everyone is bidding
+ //TODO stand in the middle to attach items to
+}
+
+function Coin({ value, pos}) {
   return <div className={`coin coin-${value}`}>{value}</div>;
 }
 
-function CoinStack({ value, amount }) {
-  return new Array(amount).fill().map((_, i) => (
-    <Coin value={value} key={i} />
-  ));
+function CoinStack({ value, amount }) { //TODO need to overlap coins to fit
+  return (
+    <div className="coin-stack">
+      {new Array(amount).fill().map((_, i) => (
+          <Coin value={value} key={i} />
+        ))}
+    </div>
+  );  
 }
 
 function Wallet({ v0, v5, v10, v25, v50 }) {
@@ -71,21 +149,15 @@ function Wallet({ v0, v5, v10, v25, v50 }) {
   );
 }
 
-function Item({ item }) {
-  return <div className="item">{item}</div>;
-}
-
-function ItemStack({ item, amount }) {
-  return new Array(amount).fill().map((_, i) => (
-    <Item item={item} key={i} />
-  ));
+function Item({ item , amount}) {
+  return <div className={`item ${item}`}>{amount}</div>;
 }
 
 function Pouch({ items }) {
   return (
     <div className="pouch">
       {Object.entries(items).map(([item, amount], i) => (
-        <ItemStack item={item} amount={amount} key={i} />
+        <Item item={item} amount={amount} key={i} />
       ))}
     </div>
   );
@@ -96,9 +168,10 @@ function PlayerName({ name }) {
 }
 
 function Player({ name, wallet, items }) {
+  console.log(wallet);
   return (
     <div className="player">
-      <Wallet wallet={wallet} />
+      <Wallet v0={wallet.v0} v5={wallet.v5} v10={wallet.v10} v25={wallet.v25} v50={wallet.v50}/>
       <PlayerName name={name} />
       <Pouch items={items} />
     </div>
