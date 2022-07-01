@@ -96,8 +96,8 @@ const state = {
   target: "", //person who bid the most or target in Targeting phase
   timer: 0,
   confirms: [],
-  players: [
-    {
+  players: {
+    "Joe" : {
       name: "Joe",
       wallet: {
         v0: 1,
@@ -118,7 +118,7 @@ const state = {
         v50: 5,
       },
     },
-    {
+    "Bob" : {
       name: "Bob",
       wallet: {
         v0: 0,
@@ -139,7 +139,7 @@ const state = {
         v50: 0,
       },
     },
-    {
+    "Alice" : {
       name: "Alice",
       wallet: {
         v0: 0,
@@ -157,7 +157,7 @@ const state = {
         v50: 0,
       },
     },
-    {
+    "Willy" : {
       name: "Willy",
       wallet: {
         v0: 0,
@@ -175,7 +175,7 @@ const state = {
         v50: 0,
       },
     },
-  ],
+  },
 }
 
 function InitGameState(lobby){
@@ -188,7 +188,7 @@ function InitGameState(lobby){
     players: [],
   }
   lobby.forEach(name => {
-    players.push(
+    players[name] = 
       {
         name: name,
         wallet: {
@@ -207,7 +207,6 @@ function InitGameState(lobby){
           v50: 0,
         },
       }
-    )
   });
 }
 
@@ -332,7 +331,7 @@ function Pay(fromPlayer, toPlayer, amount){
   }
 }
 
-function StartBiddingPhase(){
+function Event_StartBiddingPhase(){
   if(state.phase !== ACTION_SELECTION){
     console.warn("Attempt to start bidding while not in action select phase");
     return;
@@ -342,16 +341,9 @@ function StartBiddingPhase(){
   state.phase = BIDDING;
 }
 
-function MakeBid(playerName, value){
+function Event_MakeBid(playerName, value){
   if(state.phase !== BIDDING && state.phase !== VERSUS){
     console.warn("Attempt to bid while not in bidding or versus phase");
-    return;
-  }
-  var player = state.players.find(player => {
-    return player.name === playerName;
-  });
-  if(player === undefined){
-    console.warn("bidding player not found");
     return;
   }
   if(state.phase === BIDDING && playerName === state.turn){
@@ -362,13 +354,13 @@ function MakeBid(playerName, value){
     console.warn("non target player, non owner player cannot bid in versus phase");
     return
   }
-  if(player.wallet[value] > 0){
-    player.wallet[value]--;
-    player.pot[value]++;
+  if(state.players[playerName].wallet[value] > 0){
+    state.players[playerName].wallet[value]--;
+    state.players[playerName].pot[value]++;
   }
 }
 
-function StartTargetingPhase(){
+function Event_StartTargetingPhase(){
   if(state.phase !== ACTION_SELECTION){
     console.warn("Attempt to start targeting while not in action select phase");
     return;
@@ -376,40 +368,25 @@ function StartTargetingPhase(){
   state.phase = TARGETING;
 }
 
-function Target(playerName, item){
+function Event_Target(targetPlayerName, item){
   if(state.phase !== TARGETING){
     console.warn("Attempt to start target item while not in targeting phase");
     return;
   }
-  var targetPlayer = state.players.find(player => {
-    return player.name === playerName;
-  });
-  if(targetPlayer === undefined){
-    console.warn("target player not found");
-    return;
-  }
-  var ownerPlayer = state.players.find(player => {
-    return player.name === playerName;
-  });
-  if(ownerPlayer === undefined){
-    console.error("owning player not found");
-    return;
-  }
-  if(targetPlayer.items[item] <= 0){
+  if(!HasItem(targetPlayerName, item)){
     console.warn("targeting item that target player doesn't have");
     return;
   }
-  if(ownerPlayer.items[item] <= 0){
+  if(!HasItem(state.turn, item)){
     console.warn("targeting item that owner player doesn't have");
     return;
   }
-  targetPlayer.items[item]--;
-  ownerPlayer.items[item]--;
-  state.stand.push(item, item);
+  SubmitItemToStand(targetPlayerName, item);
+  SubmitItemToStand(state.turn, item);
   state.phase = VERSUS;
 }
 
-function ConfirmBidVersus(playerName){ //who is confirming
+function Event_ConfirmBidVersus(playerName){ //who is confirming
   if(state.phase !== VERSUS){
     console.warn("Attempt to confirm bid while not in versus phase");
     return;
@@ -469,7 +446,7 @@ function BiddingTimeout(){ //when bidding times out
   });
 }
 
-function ChoosePass(playerName){ //owner player passes on new item
+function Event_ChoosePass(playerName){ //owner player passes on new item
   if(state.phase !== PAY_PASS){
     console.warn("Attempt to pass while not in paypass phase");
     return;
@@ -483,7 +460,7 @@ function ChoosePass(playerName){ //owner player passes on new item
   ProgressTurn();
 }
 
-function ChoosePay(playerName){ //owner player pays for new item
+function Event_ChoosePay(playerName){ //owner player pays for new item
   if(state.phase !== PAY_PASS){
     console.warn("Attempt to pay while not in paypass phase");
     return;
@@ -502,7 +479,7 @@ function ChoosePay(playerName){ //owner player pays for new item
   ProgressTurn();
 }
 
-function CancelBid(playerName){ //remove bid from pot in bidding phase
+function Event_CancelBid(playerName){ //remove bid from pot in bidding phase
   if(state.phase !== BIDDING){
     console.warn("Attempt to cancel bid while not in bidding phase");
     return;
