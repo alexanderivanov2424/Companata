@@ -89,7 +89,7 @@ const VERSUS = "Versus"
 
 const state = {
   turn: "Alice",
-  phase: "ActionSelection",
+  phase: ACTION_SELECTION,
   stand: [ //can be 1 or two things
     "ice" 
   ],
@@ -178,8 +178,7 @@ const state = {
   ],
 }
 
-
-function initGameState(lobby){
+function InitGameState(lobby){
   state = {
     turn: lobby[0],
     phase: "ActionSelection",
@@ -212,9 +211,30 @@ function initGameState(lobby){
   });
 }
 
+function ProgressTurn(){
+  var i = lobby.indexOf(state.turn);
+  i = (i + 1) % lobby.length;
+  state.turn = lobby[i];
+  state.phase = ACTION_SELECTION;
+  state.stand = [];
+  state.target = "";
+  timer = 0;
+  confirms = [];
+}
+
 function PotValue(playerName){
   const pot = state.players[playerName].pot;
   return pot.v5 * 5 + pot.v10 * 10 + pot.v25 * 25 + pot.v50 * 50;
+}
+
+function clearPot(playerName){
+  state.players[playerName].pot = {
+    v0: 0,
+    v5: 0,
+    v10: 0,
+    v25: 0,
+    v50: 0,
+  };
 }
 
 function SendPot(fromName, toName){
@@ -224,12 +244,25 @@ function SendPot(fromName, toName){
   state.players[toName].wallet.v10 += fromPot.v10;
   state.players[toName].wallet.v25 += fromPot.v25;
   state.players[toName].wallet.v50 += fromPot.v50;
+  clearPot(fromName);
 }
 
 function ClaimStand(playerName){
   for(var i = 0; i < state.stand.length; i++){
     state.players[playerName].items[state.stand[i]] = (state.players[playerName].items[state.stand[i]] || 0) + 1;
   }
+  state.stand = [];
+}
+
+function SplitStand(firstPlayer, secondPlayer){
+  if(state.stand.length != 2){
+    console.error("Stand must be 2 items to split.");
+  }
+  if(state.stand[0] != state.stand[1]){
+    console.error("Stand items must be the same to split.");
+  }
+  state.players[firstPlayer].items[state.stand[0]] = (state.players[firstPlayer].items[state.stand[0]] || 0) + 1;
+  state.players[secondPlayer].items[state.stand[1]] = (state.players[secondPlayer].items[state.stand[1]] || 0) + 1;
   state.stand = [];
 }
 
@@ -305,6 +338,7 @@ function StartBiddingPhase(){
     return;
   }
   state.timer = 100; //TODO make timer
+  state.items.push("ice"); //TODO generate items
   state.phase = BIDDING;
 }
 
@@ -376,36 +410,113 @@ function Target(playerName, item){
 }
 
 function ConfirmBidVersus(playerName){ //who is confirming
+  if(state.phase !== VERSUS){
+    console.warn("Attempt to confirm bid while not in versus phase");
+    return;
+  }
+  if(playerName !== state.turn && playerName !== state.target){
+    console.warn("Player not in versus tried to confirm bid");
+    return;
+  }
   if(state.confirms.contains(playerName)){
     console.warn("confirming player already confirmed");
     return;
   }
   state.confirms.push(playerName);
-  if(state.confirms.contains(ownerPlayer) && state.confirms.contains(targetPlayer)){
+  if(state.confirms.contains(state.turn) && state.confirms.contains(state.target)){
     state.confirms = [];
     
-    
+    const targetPlayerPot = PotValue(state.target);
+    const turnPlayerPot = PotValue(state.turn);
+    if(targetPlayerPot > turnPlayerPot){
+      ClaimStand(state.target);
+    } else if(targetPlayerPot < turnPlayerPot){
+      ClaimStand(state.turn);
+    } else {
+      SplitStand(state.target, state.turn);
+    }
+    SendPot(state.target, state.turn);
+    SendPot(state.turn, state.target);
+    ProgressTurn();
   }
 }
 
-function ChoosePass(){ //owner player passes on new item
-  
+function BiddingTimeout(){ //when bidding times out
+  if(state.phase !== BIDDING){
+    console.error("Bidding timeout not in bidding phase");
+    return;
+  }
+  var highestBid = -1;
+  var highestBidder = state.turn;
+  lobby.forEach( (playerName) => {
+    if(state.confirms.contains(playerName)){
+      return;
+    }
+    if(PotValue(playerName) > highestBid){
+      highestBidder = playerName;
+    }
+  });
+  if(highestBidder === state.turn){
+    ClaimStand(state.turn);
+    ProgressTurn();
+    return;
+  }
+  state.target = highestBidder;
+  lobby.forEach( (playerName) => {
+    if(playerName !== state.target){
+      SendPot(playerName, playerName);
+    }
+  });
 }
 
-function ChoosePay(){ //owner player pays for new item
-
+function ChoosePass(playerName){ //owner player passes on new item
+  if(state.phase !== PAY_PASS){
+    console.warn("Attempt to pass while not in paypass phase");
+    return;
+  }
+  if(state.turn != playerName){
+    console.warn("Player passing on bid while it is not their turn");
+    return;
+  }
+  SendPot(state.target, state.turn);
+  ClaimStand(state.target);
+  ProgressTurn();
 }
 
-function CancelBid(){ //remove bid from pot in bidding phase
-
+function ChoosePay(playerName){ //owner player pays for new item
+  if(state.phase !== PAY_PASS){
+    console.warn("Attempt to pay while not in paypass phase");
+    return;
+  }
+  if(state.turn != playerName){
+    console.warn("Player paying on bid while it is not their turn");
+    return;
+  }
+  if(PotValue(state.target) > playerMoney(state.turn)){
+    console.warn("Player doesn't have enough money to pay");
+    return;
+  }
+  Pay(state.turn, state.target, PotValue(state.target));
+  SendPot(state.target, state.target);
+  ClaimStand(state.turn);
+  ProgressTurn();
 }
 
-function NewActionSelectPhase(){ //reset who retracted bids
-
+function CancelBid(playerName){ //remove bid from pot in bidding phase
+  if(state.phase !== BIDDING){
+    console.warn("Attempt to cancel bid while not in bidding phase");
+    return;
+  }
+  if(state.confirms.contains(playerName)){
+    console.warm("Player already canceled bid");
+    return
+  }
+  state.confirms.push(playerName);
+  SendPot(playerName, playerName);
 }
 
 function InfuseFunds(){
-
+  //TODO based on turn counter?
 }
 
 // -------------- Socket.IO Events ----------------
