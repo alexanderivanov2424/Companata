@@ -41,7 +41,8 @@ body {
   width: 100px;
   height: 100px;
   position: relative;
-  margin: 0 auto;
+  display: block;
+  margin: auto;
   border: 1px solid rgb(0, 0, 0);
   border-radius: 50%;
 }
@@ -49,6 +50,20 @@ body {
 .middle {
   position: relative;
   top: 50%;
+  margin: 0 auto;
+}
+
+.stand {
+  position: relative;
+  transform: rotate(90deg);
+  top: 95%;
+  margin: 0 auto;
+}
+
+.timer {
+  position: relative;
+  top: 50%;
+  left: 50%;
   margin: 0 auto;
 }
 

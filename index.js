@@ -86,97 +86,9 @@ const PAY_PASS = "PayPass"
 const TARGETING = "Targeting"
 const VERSUS = "Versus"
 
+var state = {}
+var timerEvent = null;
 
-const state = {
-  turn: "Alice",
-  phase: ACTION_SELECTION,
-  stand: [ //can be 1 or two things
-    "ice" 
-  ],
-  target: "", //person who bid the most or target in Targeting phase
-  timer: 0,
-  confirms: [],
-  players: {
-    "Joe" : {
-      name: "Joe",
-      wallet: {
-        v0: 1,
-        v5: 2,
-        v10: 3,
-        v25: 4,
-        v50: 5,
-      },
-      items: {
-        ice: 4,
-        bread: 2
-      },
-      pot: {
-        v0: 1,
-        v5: 2,
-        v10: 3,
-        v25: 4,
-        v50: 5,
-      },
-    },
-    "Bob" : {
-      name: "Bob",
-      wallet: {
-        v0: 0,
-        v5: 0,
-        v10: 0,
-        v25: 0,
-        v50: 0,
-      },
-      items: {
-        rock: 2,
-        bread: 2
-      },
-      pot: {
-        v0: 0,
-        v5: 0,
-        v10: 0,
-        v25: 0,
-        v50: 0,
-      },
-    },
-    "Alice" : {
-      name: "Alice",
-      wallet: {
-        v0: 0,
-        v5: 0,
-        v10: 4,
-        v25: 0,
-        v50: 0,
-      },
-      items: {},
-      pot: {
-        v0: 0,
-        v5: 0,
-        v10: 0,
-        v25: 0,
-        v50: 0,
-      },
-    },
-    "Willy" : {
-      name: "Willy",
-      wallet: {
-        v0: 0,
-        v5: 0,
-        v10: 0,
-        v25: 0,
-        v50: 0,
-      },
-      items: {},
-      pot: {
-        v0: 0,
-        v5: 0,
-        v10: 0,
-        v25: 0,
-        v50: 0,
-      },
-    },
-  },
-}
 
 function InitGameState(lobby){
   state = {
@@ -337,8 +249,14 @@ function Event_StartBiddingPhase(){
     return;
   }
   state.timer = 100; //TODO make timer
-  state.items.push("ice"); //TODO generate items
+  state.stand.push("ice");
   state.phase = BIDDING;
+  setTimeout(BiddingTimeout, state.timer * 1000);
+  timerEvent = setInterval(UpdateTimer,1000)
+}
+
+function UpdateTimer(){
+  state.timer --;
 }
 
 function Event_MakeBid(playerName, value){
@@ -423,6 +341,7 @@ function BiddingTimeout(){ //when bidding times out
     console.error("Bidding timeout not in bidding phase");
     return;
   }
+  clearTimeout(timerEvent);
   var highestBid = -1;
   var highestBidder = state.turn;
   lobby.forEach( (playerName) => {
@@ -546,11 +465,25 @@ io.on('connection', (socket) => {
     }
   })
 
+  function sendGameState(){
+    io.emit('game.update.state', state);
+  }
+
   socket.on('lobby.start_game', () => {
     const host = lobby[0];
     if (username === host) {
       io.emit('redirect', '/play/game');
+      InitGameState(lobby);
+      setInterval(sendGameState, 100);
     }
+  })
+
+  socket.on('game.action.target_phase', () => {
+    Event_StartTargetingPhase();
+  })
+
+  socket.on('game.action.bidding_phase', () => {
+    Event_StartBiddingPhase();
   })
 
 });

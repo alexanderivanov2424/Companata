@@ -19,9 +19,7 @@ const owner = "Joe";
 
 
 //TODO add to state:
-// players that canceled bids
 // turn counter
-// fix stand to be dict of item to amount
 // items in the stash
 // visibility for versus
 // targeting highlight items you can take
@@ -33,15 +31,16 @@ const owner = "Joe";
 
 
 const state = {
-  turn: "Joe",
-  phase: "ActionSelection",
+  turn: "Alice",
+  phase: ACTION_SELECTION,
   stand: [ //can be 1 or two things
-    "ice" 
+    "ice", "ice",
   ],
   target: "", //person who bid the most or target in Targeting phase
   timer: 0,
-  players: [
-    {
+  confirms: [],
+  players: {
+    "Joe" : {
       name: "Joe",
       wallet: {
         v0: 1,
@@ -55,20 +54,20 @@ const state = {
         bread: 2
       },
       pot: {
-        v0: 5,
-        v5: 4,
+        v0: 1,
+        v5: 2,
         v10: 3,
-        v25: 2,
-        v50: 1,
+        v25: 4,
+        v50: 5,
       },
     },
-    {
+    "Bob" : {
       name: "Bob",
       wallet: {
         v0: 0,
         v5: 0,
         v10: 0,
-        v25: 2,
+        v25: 0,
         v50: 0,
       },
       items: {
@@ -78,12 +77,12 @@ const state = {
       pot: {
         v0: 0,
         v5: 0,
-        v10: 2,
+        v10: 0,
         v25: 0,
         v50: 0,
       },
     },
-    {
+    "Alice" : {
       name: "Alice",
       wallet: {
         v0: 0,
@@ -94,18 +93,18 @@ const state = {
       },
       items: {},
       pot: {
-        v0: 1,
+        v0: 0,
         v5: 0,
         v10: 0,
-        v25: 7,
-        v50: 9,
+        v25: 0,
+        v50: 0,
       },
     },
-    {
+    "Willy" : {
       name: "Willy",
       wallet: {
         v0: 0,
-        v5: 1,
+        v5: 0,
         v10: 0,
         v25: 0,
         v50: 0,
@@ -113,13 +112,13 @@ const state = {
       items: {},
       pot: {
         v0: 0,
-        v5: 2,
+        v5: 0,
         v10: 0,
         v25: 0,
         v50: 0,
       },
     },
-  ],
+  },
 }
 
 // TODO: buttons need to be hidden / shown on respective phases
@@ -185,23 +184,35 @@ function ButtonBox({ owner, phase, turn, target }) { // horizontal box to hold b
   );
 } 
 
-function Stand({}) { // where items in question are placed
- //TODO horizontal box, will only ever hold one or two items
+function Stand({ stand }) { // where items in question are placed
+  return (
+    <div className="stand">
+      {stand.map((item, i) => (
+        <Item item={item} amount={""} key={i} />
+      ))}
+    </div>
+  );
 }
 
 function Middle({ players }) { // the middle of the table
   return (
     <div className="middle">
-      {players.map(({ pot }, i) => (
+      {[...Object.keys(players)].map((key, i) => (
         <Seat
           inner radius={100}
-          angle={(2 * Math.PI) / players.length * i}
+          angle={(2 * Math.PI) / Object.keys(players).length * i}
           key={i}
         >
-          <Wallet {...pot} />
+          <Wallet {...players[key].pot} />
         </Seat>
       ))}
     </div>
+  );
+}
+
+function Timer({ timer}){
+  return (
+    <p className="timer">{timer}</p>
   );
 }
 
@@ -281,16 +292,18 @@ function GameScreen({ turn, phase, stand, target, timer, players }) {
   return (
     <div className="room">
       <div className="table">
-        {players.map((playerProps, i) => (
+        {[...Object.keys(players)].map((key, i) => (
           <Seat
             radius={400}
-            angle={(2 * Math.PI) / players.length * i}
+            angle={(2 * Math.PI) / Object.keys(players).length * i}
             key={i}
           >
-            <Player {...playerProps} />
+            <Player {...players[key]} />
           </Seat>
         ))}
         <Middle players={players} />
+        <Stand stand={stand}/>
+        <Timer timer={timer}/>
       </div>
       <ButtonBox owner={owner} phase={phase} turn={turn} target={target} />
     </div>
