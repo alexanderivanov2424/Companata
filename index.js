@@ -98,7 +98,7 @@ var itemStash = [];
 
 for(var i = 0; i < STACK_SIZE; i++){
   ITEMS.forEach((item, _) => {
-    itemStash.push(ITEMS[j]);
+    itemStash.push(item);
   });
 }
 
@@ -414,13 +414,16 @@ function BiddingTimeout(){ //when bidding times out
   var highestBid = -1;
   var highestBidder = state.turn;
   lobby.forEach( (playerName) => {
+    console.log(playerName, "confirmed: ", state.confirms.includes(playerName), "pot: ", PotValue(playerName), "highestbid:", highestBid);
     if(state.confirms.includes(playerName)){
       return;
     }
     if(PotValue(playerName) > highestBid){
+      highestBid = PotValue(playerName);
       highestBidder = playerName;
     }
   });
+  console.log(highestBidder, highestBid, state.turn);
   if(highestBidder === state.turn){
     ClaimStand(state.turn);
     ProgressTurn();

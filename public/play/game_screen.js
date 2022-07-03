@@ -1,3 +1,6 @@
+
+
+
 /*
 Phases:
 ActionSelection - select if next phase is Bidding (big for what is on the stand) or Targeting (target another players item)
@@ -28,8 +31,20 @@ const VERSUS = "Versus"
 // legend for the items (maybe hover text)
 
 
+function PotValue(playerName){
+  const pot = state.players[playerName].pot;
+  return pot.v5 * 5 + pot.v10 * 10 + pot.v25 * 25 + pot.v50 * 50;
+}
 
-// TODO: buttons need to be hidden / shown on respective phases
+function canTarget(name, item){
+  if(item in state.players[state.turn].items && state.players[state.turn].items[item] > 0 && state.players[state.turn].items[item] < 4){
+    if(item in state.players[name].items && state.players[name].items[item] > 0 && state.players[name].items[item] < 4){
+      return true;
+    }
+  }
+  return false;
+}
+
 function TargetingButton() { // button to enter Targeting phase
   return (
     <button
@@ -105,8 +120,9 @@ function ButtonBox({ owner, phase, turn, target }) { // horizontal box to hold b
       }
       break;
     case BIDDING:
-      //TODO check so only cancel one time and only if stuff in pot
-      buttons = [<CancelBid key="CancelBid"/>];
+      if(!state.confirms.includes(owner) && PotValue(owner) > 0){
+        buttons = [<CancelBid key="CancelBid"/>];
+      }
       break;
     case PAY_PASS:
       if (owner === turn) {
@@ -137,7 +153,7 @@ function Stand({ stand }) { // where items in question are placed
   return (
     <div className="stand">
       {stand.map((item, i) => (
-        <Item item={item} amount={""} key={i} />
+        <Item name={""} item={item} amount={""} key={i} />
       ))}
     </div>
   );
@@ -214,18 +230,26 @@ function Wallet({ v0, v5, v10, v25, v50, isPot }) {
   );
 }
 
-function Item({ item , amount}) {
-  return <div className={`item ${item}`}>{amount}</div>;
+function Item({ name, item , amount}) {
+  if(name === "" || state.turn !== owner || state.phase !== TARGETING || !canTarget(name, item)){
+    return <div className={`item ${item}`}> {amount} </div>;
+  }
+  return <div 
+    className={`item ${item}`}
+    onClick={() => socket.emit('game.action.target', name, item)}
+    >
+      {amount}
+    </div>;
 }
 
-function Pouch({ items }) {
+function Pouch({ name, items }) {
   if(items === undefined){
     return (<div className="pouch"/>);
   }
   return (
     <div className="pouch">
       {Object.entries(items).map(([item, amount], i) => (
-        <Item item={item} amount={amount} key={i} />
+        <Item name = {name} item={item} amount={amount} key={i} />
       ))}
     </div>
   );
@@ -240,7 +264,7 @@ function Player({ name, wallet, items }) {
     <div className="player">
       <Wallet {...wallet} />
       <PlayerName name={name} />
-      <Pouch items={items} />
+      <Pouch name={name} items={items} />
     </div>
   );
 }
