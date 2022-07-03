@@ -93,6 +93,31 @@ body {
   flex-direction: row;
 }
 
+.role {
+  width:40px;
+  height:40px;
+}
+
+.role-turn {
+  color: gold;
+  background-color: gold;
+}
+
+.role-target {
+  color: pink;
+  background-color: pink;
+}
+
+.role-canceled {
+  color: red;
+  background-color: red;
+}
+
+.role-submitted {
+  color: blue;
+  background-color: blue;
+}
+
 .coin-stack {
   width: 20px;
   min-height: 20px;
@@ -131,6 +156,11 @@ body {
   background-color: rgb(128, 45, 128);
 }
 
+.pouch {
+  display: flex;
+  flex-direction: row;
+}
+
 .item {
   width: 20px;
   height: 20px;
@@ -141,9 +171,9 @@ body {
   font-family: "Monaco", monospace;
 }
 
-.pouch {
-  display: flex;
-  flex-direction: row;
+.targetable {
+  border-width: thick;
+  border-color: black;
 }
 
 .ice {
@@ -157,4 +187,5 @@ body {
 .rock {
   background-color: rgb(51, 52, 58);
   color: white;
+  border-color: white;
 }

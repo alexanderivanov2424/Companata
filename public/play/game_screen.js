@@ -1,6 +1,3 @@
-
-
-
 /*
 Phases:
 ActionSelection - select if next phase is Bidding (big for what is on the stand) or Targeting (target another players item)
@@ -18,6 +15,8 @@ const PAY_PASS = "PayPass"
 const TARGETING = "Targeting"
 const VERSUS = "Versus"
 
+const STATUS_OFFLINE = "Offline";
+const STATUS_ONLINE = "Online";
 
 //TODO add to state:
 //fix targeting phase
@@ -32,7 +31,6 @@ const VERSUS = "Versus"
 // hide/show wallet (later)
 // animations
 // legend for the items (maybe hover text)
-
 
 function PotValue(playerName){
   const pot = state.players[playerName].pot;
@@ -133,11 +131,10 @@ function ButtonBox({ owner, phase, turn, target }) { // horizontal box to hold b
       }
       break;
     case TARGETING:
-      // TODO: buttons for items?
       break;
     case VERSUS:
       if (owner === turn || owner === target) {
-        buttons = [<CancelBid key="CancelBid" />];
+        buttons = [<SubmitBidButton key="SubmitBidButton" />, <CancelBid key="CancelBid" />];
       }
       break;
     default:
@@ -187,6 +184,36 @@ function Timer({ timer}){
   );
 }
 
+function Role({ name}){
+  if(Object.keys(state.players).length != lobby.length){
+    return null;
+  }
+  var roleType = "";
+  if(state.players[name].status === STATUS_OFFLINE){
+     roleType = "offline";
+  } else if(state.phase === VERSUS){
+    if(state.confirms.includes(name)){
+      roleType = "submitted";
+    } else if(state.target === name){
+      roleType = "target";
+    } else if(state.turn === name){
+      roleType = "turn";
+    }
+  } else if(state.turn === name){
+    roleType = "turn";
+  } else if(state.phase === PAY_PASS && state.target === name){
+    roleType = "target";
+  } else if(state.phase === BIDDING && state.confirms.includes(name)){
+    roleType = "canceled";
+  }
+  if(roleType === ""){
+    return null;
+  }
+  return (
+    <img className={`role`} src={`./icons/${roleType}.png`} alt={`${roleType}`}></img>
+  )
+}
+
 function PotCoin({ value }) {
   return (
     <div className={`coin coin-${value}`}>
@@ -234,15 +261,20 @@ function Wallet({ v0, v5, v10, v25, v50, isPot }) {
 }
 
 function Item({ name, item , amount}) {
-  if(name === "" || state.turn !== owner || state.phase !== TARGETING || !canTarget(name, item)){
+  if(name === "" || state.phase !== TARGETING || !canTarget(name, item)){
     return <div className={`item ${item}`}> {amount} </div>;
   }
-  return <div 
-    className={`item ${item}`}
+  if(state.turn === owner){ //click event and highlight if owning player
+    return <div 
+    className={`item ${item} targetable`}
     onClick={() => socket.emit('game.action.target', name, item)}
     >
       {amount}
     </div>;
+  } else { //otherwise only highlight
+    return <div className={`item ${item} targetable`}> {amount} </div>;
+  }
+  
 }
 
 function Pouch({ name, items }) {
@@ -265,6 +297,7 @@ function PlayerName({ name }) {
 function Player({ name, wallet, items }) {
   return (
     <div className="player">
+      <Role name={name} />
       <Wallet {...wallet} />
       <PlayerName name={name} />
       <Pouch name={name} items={items} />

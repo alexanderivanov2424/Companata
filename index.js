@@ -80,19 +80,25 @@ const usernameToSessionId = new Map();
 const lobby = [];
 
 // -------------- Game State --------------------
-const ACTION_SELECTION = "ActionSelection"
-const BIDDING = "Bidding"
-const PAY_PASS = "PayPass"
-const TARGETING = "Targeting"
-const VERSUS = "Versus"
+var GAME_STARTED = false;
 
-var state = {}
+const ACTION_SELECTION = "ActionSelection";
+const BIDDING = "Bidding";
+const PAY_PASS = "PayPass";
+const TARGETING = "Targeting";
+const VERSUS = "Versus";
+
+const STATUS_OFFLINE = "Offline";
+const STATUS_ONLINE = "Online";
+
+
+var state = {};
 var timerEvent = null;
 
 
 const STACK_SIZE = 4;
 const BIDDING_TIME = 10;
-const ITEMS = ["ice", "rock"]
+const ITEMS = ["ice", "rock"];
 
 var itemStash = [];
 
@@ -104,6 +110,7 @@ for(var i = 0; i < STACK_SIZE; i++){
 
 
 function InitGameState(lobby){
+  GAME_STARTED = true;
   state = {
     turn: lobby[0],
     phase: "ActionSelection",
@@ -117,6 +124,7 @@ function InitGameState(lobby){
     state.players[name] = 
       {
         name: name,
+        status: STATUS_OFFLINE,
         wallet: {
           v0: 2,
           v5: 4,
@@ -219,6 +227,9 @@ function SubmitItemToStand(playerName, item){
   }
   state.players[playerName].items[item] -= 1;
   state.stand.push(item);
+  if(state.players[playerName].items[item] === 0){
+    delete state.players[playerName].items[item];
+  }
 }
 
 function HasCoin(playerName, coin){
@@ -304,7 +315,6 @@ function Event_MakeBid(playerName, value){
     console.warn("player that canceled bid cannot bid again");
     return;
   }
-  console.log("BIDDING", playerName, value);
   if(state.players[playerName].wallet[value] > 0){
     state.players[playerName].wallet[value]--;
     state.players[playerName].pot[value]++;
@@ -370,6 +380,7 @@ function Event_Target(targetPlayerName, item){
   SubmitItemToStand(targetPlayerName, item);
   SubmitItemToStand(state.turn, item);
   state.phase = VERSUS;
+  state.target = targetPlayerName;
 }
 
 function Event_ConfirmBidVersus(playerName){ //who is confirming
@@ -409,21 +420,20 @@ function BiddingTimeout(){ //when bidding times out
     console.error("Bidding timeout not in bidding phase");
     return;
   }
-  clearTimeout(timerEvent); //TODO bug
+  clearTimeout(timerEvent);
   state.timer = 0;
   var highestBid = -1;
   var highestBidder = state.turn;
   lobby.forEach( (playerName) => {
-    console.log(playerName, "confirmed: ", state.confirms.includes(playerName), "pot: ", PotValue(playerName), "highestbid:", highestBid);
     if(state.confirms.includes(playerName)){
       return;
     }
-    if(PotValue(playerName) > highestBid){
-      highestBid = PotValue(playerName);
+    const potValue = PotValue(playerName);
+    if(potValue > 0 && potValue > highestBid){
+      highestBid = potValue;
       highestBidder = playerName;
     }
   });
-  console.log(highestBidder, highestBid, state.turn);
   if(highestBidder === state.turn){
     ClaimStand(state.turn);
     ProgressTurn();
@@ -484,6 +494,18 @@ function Event_CancelBid(playerName){ //remove bid from pot in bidding phase
   SendPot(playerName, playerName);
 }
 
+function Event_CancelBidVersus(playerName){ //remove bid from pot in versus phase
+  if(state.phase !== VERSUS){
+    console.warn("Attempt to cancel bid while not in versus phase");
+    return;
+  }
+  if(state.confirms.includes(playerName)){
+    console.warn("Player cannot cancel bid after amount confirmed");
+    return
+  }
+  SendPot(playerName, playerName);
+}
+
 function InfuseFunds(){
   //TODO based on turn counter?
 }
@@ -504,6 +526,9 @@ io.on('connection', (socket) => {
     lobby.push(username);
     io.emit('lobby.update.lobby_list', lobby);
     io.emit('game.update.lobby', lobby);
+    if(GAME_STARTED && Object.keys(state.players).includes(username)){
+      state.players[username].status = STATUS_ONLINE;
+    }
   }
 
   socket.on('disconnect', () => {
@@ -515,6 +540,10 @@ io.on('connection', (socket) => {
       lobby.splice(index, 1);
     }
     io.emit('lobby.update.lobby_list', lobby);
+
+    if(GAME_STARTED && Object.keys(state.players).includes(username)){
+      state.players[username].status = STATUS_OFFLINE;
+    }
   });
 
   socket.emit('lobby.update.client_username', username);
@@ -544,7 +573,6 @@ io.on('connection', (socket) => {
   });
 
   function sendGameState(){
-    //console.log(state);
     io.emit('game.update.state', state);
     
   }
@@ -596,7 +624,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('game.action.cancel_bid', (playerName) => {
-    Event_CancelBid(playerName)
+    if(state.phase === BIDDING){
+      Event_CancelBid(playerName);
+    } else if(state.phase === VERSUS){
+      Event_CancelBidVersus(playerName);
+    }
   });
 
 });
