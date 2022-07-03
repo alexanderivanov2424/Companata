@@ -19,9 +19,8 @@ const STATUS_OFFLINE = "Offline";
 const STATUS_ONLINE = "Online";
 
 //TODO add to state:
-//fix targeting phase
-//add player status for online/offline
-//add player status for state.turn, state.target, state.confirms (bidding phase)
+//make player status horizontal box so that you can have more than one at once
+//move shared code to another file
 
 // turn counter
 // visibility for versus
@@ -320,6 +319,7 @@ function Seat({ inner, radius, angle, children }) {
 
 const initState = {
   turn: "",
+  turnCounter: 0,
   phase: ACTION_SELECTION,
   stand: [],
   target: "", //person who bid the most or target in Targeting phase

@@ -113,6 +113,7 @@ function InitGameState(lobby){
   GAME_STARTED = true;
   state = {
     turn: lobby[0],
+    turnCounter: 0,
     phase: "ActionSelection",
     stand: [],
     target: "", //person who bid the most or target in Targeting phase
@@ -155,6 +156,7 @@ function ProgressTurn(){
   var i = lobby.indexOf(state.turn);
   i = (i + 1) % lobby.length;
   state.turn = lobby[i];
+  state.turnCounter ++;
   state.phase = ACTION_SELECTION;
   state.stand = [];
   state.target = "";
