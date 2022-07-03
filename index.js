@@ -90,6 +90,19 @@ var state = {}
 var timerEvent = null;
 
 
+const STACK_SIZE = 4;
+const BIDDING_TIME = 10;
+const ITEMS = ["ice", "rock"]
+
+var itemStash = [];
+
+for(var i = 0; i < STACK_SIZE; i++){
+  ITEMS.forEach((item, _) => {
+    itemStash.push(ITEMS[j]);
+  });
+}
+
+
 function InitGameState(lobby){
   state = {
     turn: lobby[0],
@@ -121,6 +134,13 @@ function InitGameState(lobby){
         },
       }
   });
+}
+
+function GenerateItem(){
+  const i = Math.floor(Math.random()*itemStash.length)
+  const newItem = itemStash[i];
+  itemStash.splice(i, 1);
+  return newItem;
 }
 
 function ProgressTurn(){
@@ -183,6 +203,13 @@ function HasItem(playerName, item){
     return false;
   }
   return state.players[playerName].items[item] > 0;
+}
+
+function CanTargetItem(playerName, item){
+  if(state.players[playerName].items[item] <= 0 || state.players[playerName].items[item] >= STACK_SIZE){
+    return false;
+  }
+  return true;
 }
 
 function SubmitItemToStand(playerName, item){
@@ -249,8 +276,8 @@ function Event_StartBiddingPhase(){
     console.warn("Attempt to start bidding while not in action select phase");
     return;
   }
-  state.timer = 20; //TODO make timer
-  state.stand.push("ice");
+  state.timer = BIDDING_TIME;
+  state.stand.push(GenerateItem());
   state.phase = BIDDING;
   setTimeout(BiddingTimeout, state.timer * 1000);
   timerEvent = setInterval(UpdateTimer,1000)
@@ -289,6 +316,33 @@ function Event_StartTargetingPhase(){
     console.warn("Attempt to start targeting while not in action select phase");
     return;
   }
+  var canTarget = false;
+  for (const [ownItem, ownItemNumber] of Object.entries(state.players[state.turn].items)) {
+    if(ownItemNumber <=0 || ownItemNumber >= STACK_SIZE){
+      continue;
+    }
+    lobby.forEach((otherPlayerName, i) => {
+      if(otherPlayerName === state.turn){
+        return;
+      }
+      for (const [otherItem, otherItemNumber] of Object.entries(state.players[state.turn].items)) {
+        if(otherItemNumber <=0 || otherItemNumber >= STACK_SIZE){
+          continue;
+        }
+        if(otherItem === ownItem){
+          canTarget = true;
+          return;
+        }
+      }
+    })
+    if(canTarget){
+      break;
+    }
+  }
+  if(!canTarget){
+    console.warn("Attempt to start targeting when no available items for targeting");
+    return;
+  }
   state.phase = TARGETING;
 }
 
@@ -301,8 +355,16 @@ function Event_Target(targetPlayerName, item){
     console.warn("targeting item that target player doesn't have");
     return;
   }
+  if(!CanTargetItem(targetPlayerName, item)){
+    console.warn("targeting item that can't be targeted");
+    return;
+  }
   if(!HasItem(state.turn, item)){
     console.warn("targeting item that owner player doesn't have");
+    return;
+  }
+  if(!CanTargetItem(state.turn, item)){
+    console.warn("targeting item that can't be targeted");
     return;
   }
   SubmitItemToStand(targetPlayerName, item);
