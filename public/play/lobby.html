@@ -6,7 +6,7 @@
 
   <body>
     <ul id="players"></ul>
-    <button id="join">Join Lobby</button>
+    <!-- <button id="join">Join Lobby</button> -->
     <button id="start" disabled>Start Game</button>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -16,12 +16,12 @@
       let localUsername = null;
 
       const players = document.getElementById("players");
-      const joinButton = document.getElementById("join");
+      //const joinButton = document.getElementById("join");
       const startButton = document.getElementById("start");
 
-      joinButton.addEventListener('click', () => {
-        socket.emit('lobby.join');
-      });
+      //joinButton.addEventListener('click', () => {
+      //  socket.emit('lobby.join');
+      //});
 
       startButton.addEventListener('click', () => {
         socket.emit('lobby.start_game');

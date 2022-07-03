@@ -15,8 +15,6 @@ const PAY_PASS = "PayPass"
 const TARGETING = "Targeting"
 const VERSUS = "Versus"
 
-const owner = "Joe";
-
 
 //TODO add to state:
 // turn counter
@@ -30,120 +28,72 @@ const owner = "Joe";
 // legend for the items (maybe hover text)
 
 
-const state = {
-  turn: "Alice",
-  phase: ACTION_SELECTION,
-  stand: [ //can be 1 or two things
-    "ice", "ice",
-  ],
-  target: "", //person who bid the most or target in Targeting phase
-  timer: 0,
-  confirms: [],
-  players: {
-    "Joe" : {
-      name: "Joe",
-      wallet: {
-        v0: 1,
-        v5: 2,
-        v10: 3,
-        v25: 4,
-        v50: 5,
-      },
-      items: {
-        ice: 4,
-        bread: 2
-      },
-      pot: {
-        v0: 1,
-        v5: 2,
-        v10: 3,
-        v25: 4,
-        v50: 5,
-      },
-    },
-    "Bob" : {
-      name: "Bob",
-      wallet: {
-        v0: 0,
-        v5: 0,
-        v10: 0,
-        v25: 0,
-        v50: 0,
-      },
-      items: {
-        rock: 2,
-        bread: 2
-      },
-      pot: {
-        v0: 0,
-        v5: 0,
-        v10: 0,
-        v25: 0,
-        v50: 0,
-      },
-    },
-    "Alice" : {
-      name: "Alice",
-      wallet: {
-        v0: 0,
-        v5: 0,
-        v10: 4,
-        v25: 0,
-        v50: 0,
-      },
-      items: {},
-      pot: {
-        v0: 0,
-        v5: 0,
-        v10: 0,
-        v25: 0,
-        v50: 0,
-      },
-    },
-    "Willy" : {
-      name: "Willy",
-      wallet: {
-        v0: 0,
-        v5: 0,
-        v10: 0,
-        v25: 0,
-        v50: 0,
-      },
-      items: {},
-      pot: {
-        v0: 0,
-        v5: 0,
-        v10: 0,
-        v25: 0,
-        v50: 0,
-      },
-    },
-  },
-}
 
 // TODO: buttons need to be hidden / shown on respective phases
 function TargetingButton() { // button to enter Targeting phase
-  return <button className="button button-targeting">Targeting</button>;
+  return (
+    <button
+      className="button button-targeting"
+      onClick={() => socket.emit('game.action.target_phase')}
+    >
+      Targeting
+    </button>
+  );
 }
 
 function SubmitBidButton() { // button to submit secret bid amount in Targeting phase
-  return <button className="button button-submit">Submit</button>;
+  return (
+    <button
+      className="button button-submit"
+      onClick={() => socket.emit('game.action.confirm_bid_versus', owner)}
+    >
+      Submit
+    </button>
+  );
 }
 
 function BiddingButton() { // button to ender Bidding phase
-  return <button className="button button-bidding">Bidding</button>;
+  return (
+    <button
+      className="button button-bidding"
+      onClick={() => socket.emit('game.action.bidding_phase')}
+    >
+      Bidding
+    </button>
+  );
 }
 
 function PayButton() { // pay bid amount for item
-  return <button className="button button-pay">Pay</button>;
+  return (
+    <button
+      className="button button-pay"
+      onClick={() => socket.emit('game.action.choose_pay', owner)}
+    >
+      Pay
+    </button>
+  );
 }
 
 function PassButton() { // take bid amount but no item
-  return <button className="button button-pass">Pass</button>;
+  return (
+    <button
+      className="button button-pass"
+      onClick={() => socket.emit('game.action.choose_pass', owner)}
+    >
+      Pass
+    </button>
+  );
 }
 
 function CancelBid() { // button to retract bid (during Bidding or Versus phase)
-  return <button className="button button-cancel">Cancel</button>;
+  return (
+    <button
+      className="button button-cancel"
+      onClick={() => socket.emit('game.action.cancel_bid', owner)}
+    >
+      Cancel
+    </button>
+  );
 }
 
 function ButtonBox({ owner, phase, turn, target }) { // horizontal box to hold buttons
@@ -151,17 +101,16 @@ function ButtonBox({ owner, phase, turn, target }) { // horizontal box to hold b
   switch (phase) {
     case ACTION_SELECTION:
       if (owner === turn) {
-        buttons = [<TargetingButton />, <BiddingButton />];
+        buttons = [<TargetingButton key="TargetingButton" />, <BiddingButton key="BiddingButton" />];
       }
       break;
     case BIDDING:
-      if (owner === turn || owner === target) {
-        buttons = [<CancelBid />];
-      }
+      //TODO check so only cancel one time and only if stuff in pot
+      buttons = [<CancelBid key="CancelBid"/>];
       break;
     case PAY_PASS:
       if (owner === turn) {
-        buttons = [<PayButton />, <PassButton />];
+        buttons = [<PayButton key="PayButton" />, <PassButton key="PassButton" />];
       }
       break;
     case TARGETING:
@@ -169,7 +118,7 @@ function ButtonBox({ owner, phase, turn, target }) { // horizontal box to hold b
       break;
     case VERSUS:
       if (owner === turn || owner === target) {
-        buttons = [<CancelBid />];
+        buttons = [<CancelBid key="CancelBid" />];
       }
       break;
     default:
@@ -195,15 +144,18 @@ function Stand({ stand }) { // where items in question are placed
 }
 
 function Middle({ players }) { // the middle of the table
+  if(Object.keys(players).length != lobby.length){
+    return (<div className="middle" />);
+  }
   return (
     <div className="middle">
-      {[...Object.keys(players)].map((key, i) => (
+      {lobby.map((key, i) => (
         <Seat
           inner radius={100}
-          angle={(2 * Math.PI) / Object.keys(players).length * i}
+          angle={(2 * Math.PI) / lobby.length * (i - lobby.indexOf(owner))}
           key={i}
         >
-          <Wallet {...players[key].pot} />
+          <Wallet isPot {...players[key].pot} />
         </Seat>
       ))}
     </div>
@@ -216,11 +168,26 @@ function Timer({ timer}){
   );
 }
 
-function Coin({ value }) {
-  return <div className={`coin coin-${value}`}>{value}</div>;
+function PotCoin({ value }) {
+  return (
+    <div className={`coin coin-${value}`}>
+      {value}
+    </div>
+  );
 }
 
-function CoinStack({ value, amount }) { // TODO: need to overlap coins to fit
+function Coin({ value }) {
+  return (
+    <div
+      className={`coin coin-${value}`}
+      onClick={() => socket.emit('game.action.bid', owner, value)}
+    >
+      {value}
+    </div>
+  );
+}
+
+function CoinStack({ value, amount, isPot }) { // TODO: need to overlap coins to fit
   const coinSize = 20;
   const maxStackSize = 80;
   const shift = amount > 4 ? (maxStackSize - amount * coinSize) / (amount - 1) : 0;
@@ -228,21 +195,21 @@ function CoinStack({ value, amount }) { // TODO: need to overlap coins to fit
     <div className="coin-stack">
       {new Array(amount).fill().map((_, i) => (
         <div style={{ marginTop: i === 0 ? 0 : shift }} key={i}>
-          <Coin value={value} />
+          {isPot ? <PotCoin value={value} /> : <Coin value={value} />}
         </div>
       ))}
     </div>
   );
 }
 
-function Wallet({ v0, v5, v10, v25, v50 }) {
+function Wallet({ v0, v5, v10, v25, v50, isPot }) {
   return (
     <div className="wallet">
-      <CoinStack value={0} amount={v0} />
-      <CoinStack value={5} amount={v5} />
-      <CoinStack value={10} amount={v10} />
-      <CoinStack value={25} amount={v25} />
-      <CoinStack value={50} amount={v50} />
+      <CoinStack value={0} amount={v0} isPot={isPot} />
+      <CoinStack value={5} amount={v5} isPot={isPot} />
+      <CoinStack value={10} amount={v10} isPot={isPot} />
+      <CoinStack value={25} amount={v25} isPot={isPot} />
+      <CoinStack value={50} amount={v50} isPot={isPot} />
     </div>
   );
 }
@@ -252,6 +219,9 @@ function Item({ item , amount}) {
 }
 
 function Pouch({ items }) {
+  if(items === undefined){
+    return (<div className="pouch"/>);
+  }
   return (
     <div className="pouch">
       {Object.entries(items).map(([item, amount], i) => (
@@ -288,14 +258,56 @@ function Seat({ inner, radius, angle, children }) {
   );
 }
 
-function GameScreen({ turn, phase, stand, target, timer, players }) {
+const initState = {
+  turn: "",
+  phase: ACTION_SELECTION,
+  stand: [],
+  target: "", //person who bid the most or target in Targeting phase
+  timer: 0,
+  confirms: [],
+  players:{},
+}
+
+const { useState, useEffect } = React;
+const socket = io();
+
+let owner = '';
+let lobby = [];
+let state = initState;
+
+function GameScreen() {
+  const [, updateState] = React.useState();
+  const forceUpdate = React.useCallback(() => updateState({}), []);
+
+  useEffect(() => {
+    socket.on('game.update.state', (newState) => {
+      //console.log('got state', newState);
+      state = newState;
+      forceUpdate();
+    });
+    socket.on('game.update.username', (username) => {
+      //console.log('got username', username);
+      owner = username;
+      forceUpdate();
+    });
+    socket.on('game.update.lobby', (newLobby) => {
+      //console.log('got lobby', newLobby);
+      lobby = newLobby;
+      forceUpdate();
+    });
+    socket.emit('game.action.get_username');
+    socket.emit('game.action.get_lobby');
+  }, []);
+
+  const { turn, phase, stand, target, timer, players } = state;
+
   return (
     <div className="room">
       <div className="table">
-        {[...Object.keys(players)].map((key, i) => (
+        {lobby.map((key, i) => (
           <Seat
             radius={400}
-            angle={(2 * Math.PI) / Object.keys(players).length * i}
+            angle={(2 * Math.PI) / lobby.length * (i - lobby.indexOf(owner))}
             key={i}
           >
             <Player {...players[key]} />
@@ -312,9 +324,4 @@ function GameScreen({ turn, phase, stand, target, timer, players }) {
 
 const domContainer = document.querySelector('#root');
 const root = ReactDOM.createRoot(domContainer);
-root.render(<GameScreen {...state} />);
-
-const socket = io();
-socket.on('game.update.state', (state) => {
-  state = state;
-});
+root.render(<GameScreen />);

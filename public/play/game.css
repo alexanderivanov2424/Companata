@@ -55,15 +55,17 @@ body {
 
 .stand {
   position: relative;
-  transform: rotate(90deg);
-  top: 95%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  top: 50%;
   margin: 0 auto;
 }
 
 .timer {
   position: relative;
+  text-align: center;
   top: 50%;
-  left: 50%;
   margin: 0 auto;
 }
 
