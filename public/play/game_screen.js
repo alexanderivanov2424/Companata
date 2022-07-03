@@ -20,13 +20,16 @@ const VERSUS = "Versus"
 
 
 //TODO add to state:
+//fix targeting phase
+//add player status for online/offline
+//add player status for state.turn, state.target, state.confirms (bidding phase)
+
 // turn counter
-// items in the stash
 // visibility for versus
 // targeting highlight items you can take
 
 // Extra features
-// visibility (later)
+// hide/show wallet (later)
 // animations
 // legend for the items (maybe hover text)
 
