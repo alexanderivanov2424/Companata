@@ -313,3 +313,8 @@ function GameScreen({ turn, phase, stand, target, timer, players }) {
 const domContainer = document.querySelector('#root');
 const root = ReactDOM.createRoot(domContainer);
 root.render(<GameScreen {...state} />);
+
+const socket = io();
+socket.on('game.update.state', (state) => {
+  state = state;
+});

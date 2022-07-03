@@ -100,7 +100,7 @@ function InitGameState(lobby){
     players: [],
   }
   lobby.forEach(name => {
-    players[name] = 
+    state.players[name] = 
       {
         name: name,
         wallet: {
@@ -466,6 +466,7 @@ io.on('connection', (socket) => {
   })
 
   function sendGameState(){
+    console.log('state updated');
     io.emit('game.update.state', state);
   }
 
