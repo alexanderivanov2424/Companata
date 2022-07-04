@@ -21,10 +21,26 @@ function shuffle(array) {
   return array;
 }
 
-const ITEMS_ALL = shuffle(
-  ["ice", "rock", "bread", "carrot", "pill", "fish", "log", "cherry", "water", "sauce", "juice", "mold"]
-);
-const ITEMS = ITEMS_ALL.slice(0, 12);
+const ITEM_TO_HOVER = {
+  ice: "Ice",
+  rock: "Rock",
+  bread: "Bread",
+  carrot: "Carrot",
+  pill: "Pill",
+  fish: "Fish",
+  log: "Log",
+  cherry: "Cherry",
+  water: "Water",
+  sauce: "Sauce",
+  juice: "Juice",
+  mold: "Mold",
+  kettle: "Kettle",
+  virus: "The Rona",
+  leg: "Chicken Leg",
+}
+
+const ITEMS_ALL = shuffle([...Object.keys(ITEM_TO_HOVER)]);
+const ITEMS = ITEMS_ALL;//ITEMS_ALL.slice(0, 15);
 
 function PotValue(state, playerName){
   const pot = state.players[playerName].pot;
@@ -58,6 +74,7 @@ export {
   STACK_SIZE,
   BIDDING_TIME,
   ITEMS,
+  ITEM_TO_HOVER,
   PotValue,
   canTarget,
   PotEmpty,

@@ -119,6 +119,7 @@ function InitGameState(lobby){
     timer: 0,
     confirms: [],
     players: {},
+    stashEmpty: false,
   }
   lobby.forEach(name => {
     state.players[name] = 
@@ -161,8 +162,11 @@ function ProgressTurn(){
   state.target = "";
   state.timer = 0;
   state.confirms = [];
-  if(state.turnCounter % 3 === 1){
+  if(state.turnCounter % lobby.length === 0){
     InfuseFunds();
+  }
+  if(stash.length === 0){
+    state.stashEmpty = true;
   }
 }
 
@@ -288,6 +292,10 @@ function Pay(fromPlayer, toPlayer, amount){
 function Event_StartBiddingPhase(){
   if(state.phase !== ACTION_SELECTION){
     console.warn("Attempt to start bidding while not in action select phase");
+    return;
+  }
+  if(state.stashEmpty){
+    console.warn("Cannot bid when stash is empty");
     return;
   }
   state.timer = BIDDING_TIME;

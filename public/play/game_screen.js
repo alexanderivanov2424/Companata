@@ -9,6 +9,7 @@ import {
   STACK_SIZE,
   BIDDING_TIME,
   ITEMS,
+  ITEM_TO_HOVER,
   PotValue,
   canTarget,
   PotEmpty,
@@ -16,14 +17,11 @@ import {
 
 
 //TODO:
-// paying when not enough low denominations broken
 // make player status horizontal box so that you can have more than one at once
 // who is currently winning the bid
 // move shared code to another file
-// prevent text selecting on coins
-// bidding when no more items to generate
 // add win condition and win screen
-// icon art
+// redo button box logic (very messy)
 
 // first person to bid amount wins in tie
 // lobby changing order needs to be fixed
@@ -118,8 +116,10 @@ function ButtonBox({ owner, phase, turn, target }) { // horizontal box to hold b
   switch (phase) {
     case ACTION_SELECTION:
       if (owner === turn) {
-        
-        buttons = [<TargetingButton key="TargetingButton" />, <BiddingButton key="BiddingButton" />];
+        if(!state.stashEmpty){
+          buttons = [<BiddingButton key="BiddingButton" />];
+        }
+        buttons.push(<TargetingButton key="TargetingButton" />);
       }
       break;
     case BIDDING:
@@ -274,19 +274,33 @@ function Wallet({ name, v0, v5, v10, v25, v50, isPot }) {
 }
 
 function Item({ name, item , amount}) {
+  const hoverText = ITEM_TO_HOVER[item];
   if(name === "" || state.phase !== TARGETING || !canTarget(state, name, item)){
-    return <div title={item} className={`item ${item}`}> {amount} </div>;
+    return <div 
+      title={hoverText}
+      className={`item-box item ${item}`}
+      >
+        <img className="item-box item-icon" src={`./icons/items/${item}.png`}/>
+        <div className={"item-box item-text"}>{amount}</div>
+      </div>;
   }
   if(state.turn === owner){ //click event and highlight if owning player
     return <div 
-    title={item} 
-    className={`item ${item} targetable`}
+    title={hoverText} 
+    className={`item-box item ${item} targetable`}
     onClick={() => socket.emit('game.action.target', name, item)}
     >
-      {amount}
+      <img className="item-box item-icon" src={`./icons/items/${item}.png`}/>
+      <div className={"item-box item-text"}>{amount}</div>
     </div>;
   } else { //otherwise only highlight
-    return <div title={item} className={`item ${item} targetable`}> {amount} </div>;
+    return <div
+      title={hoverText}
+      className={`item-box item ${item} targetable`}
+      >
+        <img className="item-box item-icon" src={`./icons/items/${item}.png`}/>
+        <div className={"item-box item-text"}>{amount}</div>
+      </div>;
   }
   
 }
@@ -341,6 +355,7 @@ const initState = {
   timer: 0,
   confirms: [],
   players:{},
+  stashEmpty: false,
 }
 
 const { useState, useEffect } = React;
