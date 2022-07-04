@@ -337,6 +337,8 @@ function Event_MakeBid(playerName, value){
   if(state.players[playerName].wallet[value] > 0){
     state.players[playerName].wallet[value]--;
     state.players[playerName].pot[value]++;
+    //remove player from bid list and then add them at the end
+    state.biddingOrder = state.biddingOrder.filter((name) => {return name !== playerName;});
     state.biddingOrder.push(playerName);
   }
 }
