@@ -18,6 +18,7 @@ import {
   ITEMS,
   PotValue,
   PotEmpty,
+  getBidWinner,
 } from './public/common.mjs';
 
 
@@ -91,7 +92,8 @@ app.post('/logout', (req, res) => {
 const sessionIdToUsername = new Map();
 const usernameToSessionId = new Map();
 
-const lobby = [];
+var lobby = [];
+var kickVote = {};
 
 // -------------- Game State --------------------
 var GAME_STARTED = false;
@@ -118,6 +120,7 @@ function InitGameState(lobby){
     confirms: [],
     players: {},
     stashEmpty: false,
+    biddingOrder: [],
   }
   lobby.forEach(name => {
     state.players[name] = 
@@ -160,8 +163,9 @@ function ProgressTurn(){
   state.target = "";
   state.timer = 0;
   state.confirms = [];
+  state.biddingOrder = [];
   if(state.turnCounter % lobby.length === 0){
-    InfuseFunds();
+    InfuseFunds(Math.floor(state.turnCounter / lobby.length));
   }
   if(itemStash.length === 0){
     state.stashEmpty = true;
@@ -250,6 +254,12 @@ function GiveCoin(toPlayer, coin){
   state.players[toPlayer].wallet[coin] += 1;
 }
 
+function GiveCoins(toPlayer, coin, number){
+  for(var i = 0; i < number; i++){
+    state.players[toPlayer].wallet[coin] += 1;
+  }
+}
+
 function playerMoney(playerName){
   const wallet = state.players[playerName].wallet;
   return wallet.v5 * 5 + wallet.v10 * 10 + wallet.v25 * 25 + wallet.v50 * 50;
@@ -327,6 +337,7 @@ function Event_MakeBid(playerName, value){
   if(state.players[playerName].wallet[value] > 0){
     state.players[playerName].wallet[value]--;
     state.players[playerName].pot[value]++;
+    state.biddingOrder.push(playerName);
   }
 }
 
@@ -435,18 +446,7 @@ function BiddingTimeout(){ //when bidding times out
   }
   clearTimeout(timerEvent);
   state.timer = 0;
-  var highestBid = -1;
-  var highestBidder = state.turn;
-  lobby.forEach( (playerName) => {
-    if(state.confirms.includes(playerName)){
-      return;
-    }
-    const potValue = PotValue(state, playerName);
-    if(!PotEmpty(state, playerName) && potValue > highestBid){
-      highestBid = potValue;
-      highestBidder = playerName;
-    }
-  });
+  const highestBidder = getBidWinner(state, lobby);
   if(highestBidder === state.turn){
     ClaimStand(state.turn);
     ProgressTurn();
@@ -519,13 +519,42 @@ function Event_CancelBidVersus(playerName){ //remove bid from pot in versus phas
   SendPot(playerName, playerName);
 }
 
-function InfuseFunds(){
-  lobby.forEach((name) => {
-    GiveCoin(name, "v5");
-    GiveCoin(name, "v10");
-    GiveCoin(name, "v25");
-    GiveCoin(name, "v50");
-  })
+function InfuseFunds(level){
+  switch(level) {
+    case 1:
+      lobby.forEach((name) => {
+        GiveCoins(name, "v0", 1);
+        GiveCoins(name, "v5", 3);
+        GiveCoins(name, "v10", 3);
+        GiveCoins(name, "v25", 2);
+        GiveCoins(name, "v50", 1);
+      })
+      break;
+    case 2:
+      lobby.forEach((name) => {
+        GiveCoins(name, "v0", 1);
+        GiveCoins(name, "v5", 3);
+        GiveCoins(name, "v10", 3);
+        GiveCoins(name, "v25", 2);
+        GiveCoins(name, "v50", 1);
+      })
+      break;
+    case 3:
+      lobby.forEach((name) => {
+        GiveCoins(name, "v0", 1);
+        GiveCoins(name, "v25", 4);
+        GiveCoins(name, "v50", 2);
+      })
+      break;
+    default:
+      // code block
+  }
+}
+
+function filterGhosts(){
+  lobby = lobby.filter(function(name) {
+    return name !== undefined && name !== null;
+  });
 }
 
 // -------------- Socket.IO Events ----------------
@@ -541,6 +570,7 @@ io.on('connection', (socket) => {
 
   console.log(`${username} connected`);
   if (!lobby.includes(username)) {
+    filterGhosts();
     if (!GAME_STARTED) {
       lobby.push(username);
       io.emit('lobby.update.lobby_list', lobby);
@@ -584,6 +614,23 @@ io.on('connection', (socket) => {
       io.emit('lobby.update.lobby_list', lobby);
     }
   });
+
+  socket.on('lobby.voteKick', (username, badActor) => {
+    if(badActor === null || badActor === undefined){
+      filterGhosts();
+      io.emit('lobby.update.lobby_list', lobby);
+    } if (lobby.includes(badActor)) {
+      if(!Object.keys(kickVote).includes(badActor)){
+        kickVote[badActor] = [];
+      }
+      kickVote[badActor].push(username);
+      if(kickVote[badActor].length > lobby.length / 2){
+        i = lobby.indexOf(badActor);
+        lobby.splice(i, 1);
+        io.emit('lobby.update.lobby_list', lobby);
+      }
+    }
+  })
 
   function sendGameState(){
     io.emit('game.update.state', state);

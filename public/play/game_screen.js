@@ -13,12 +13,11 @@ import {
   PotValue,
   canTarget,
   PotEmpty,
+  getBidWinner,
 } from './common.mjs';
 
 
 //TODO:
-// make player status horizontal box so that you can have more than one at once
-// who is currently winning the bid
 // move shared code to another file
 // add win condition and win screen
 // redo button box logic (very messy)
@@ -184,38 +183,46 @@ function Middle({ players }) { // the middle of the table
 }
 
 function Timer({ timer}){
+  if(state.phase !== BIDDING){
+    return null;
+  }
   return (
     <p className="timer">{timer}</p>
   );
 }
 
-function Role({ name}){
+function Role({ roleType }){
+  return (
+    <img className="role" src={`./icons/${roleType}.png`} alt={`${roleType}`}></img>
+  )
+}
+
+function StatusBox ({ name }){
   if(Object.keys(state.players).length != lobby.length){
     return null;
   }
-  var roleType = "";
+  var statusList = [];
   if(state.players[name].status === STATUS_OFFLINE){
-     roleType = "offline";
-  } else if(state.phase === VERSUS){
-    if(state.confirms.includes(name)){
-      roleType = "submitted";
-    } else if(state.target === name){
-      roleType = "target";
-    } else if(state.turn === name){
-      roleType = "turn";
-    }
-  } else if(state.turn === name){
-    roleType = "turn";
-  } else if(state.phase === PAY_PASS && state.target === name){
-    roleType = "target";
-  } else if(state.phase === BIDDING && state.confirms.includes(name)){
-    roleType = "canceled";
+    statusList.push(<Role roleType="offline" />);
   }
-  if(roleType === ""){
-    return null;
+  if(state.turn === name){
+    statusList.push(<Role roleType="turn" />);
   }
-  return (
-    <img className={`role`} src={`./icons/${roleType}.png`} alt={`${roleType}`}></img>
+  if(state.target === name && (state.phase === VERSUS || state.phase === PAY_PASS)){
+    statusList.push(<Role roleType="target" />);
+  }
+  if(state.phase === VERSUS && state.confirms.includes(name)){
+    statusList.push(<Role roleType="submitted" />);
+  }
+  if(state.phase === BIDDING && state.confirms.includes(name)){
+    statusList.push(<Role roleType="canceled" />);
+  }
+  if((state.phase === BIDDING || state.phase === PAY_PASS) && name === getBidWinner(state, lobby)){
+    statusList.push(<Role roleType="highest-bidder" />);
+  }
+  return (<div className="status-box">
+    {statusList}
+  </div>
   )
 }
 
@@ -325,7 +332,7 @@ function PlayerName({ name }) {
 function Player({ name, wallet, items }) {
   return (
     <div className="player">
-      <Role name={name} />
+      <StatusBox name={name} />
       <Wallet name={name} {...wallet} />
       <PlayerName name={name} />
       <Pouch name={name} items={items} />

@@ -37,8 +37,14 @@
         startButton.disabled = !isHost;
 
         players.replaceChildren(...lobby.map((username) => {
+          const button = document.createElement('button');
+          button.innerHTML = "kick";
+          button.onclick = function () {
+            socket.emit('lobby.voteKick', localUsername, username);
+          };
           const item = document.createElement('li');
           item.innerText = username;
+          item.appendChild(button);
           return item;
         }));
       });

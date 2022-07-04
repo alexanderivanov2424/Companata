@@ -63,6 +63,25 @@ function canTarget(state, name, item){
   return false;
 }
 
+function getBidWinner(state, lobby){
+  var highestBid = -1;
+  var highestBidder = state.turn;
+  lobby.forEach( (playerName) => {
+    if(state.confirms.includes(playerName)){
+      return;
+    }
+    const potValue = PotValue(state, playerName);
+    if(!PotEmpty(state, playerName)){
+      if(potValue > highestBid || (potValue === highestBid && state.biddingOrder.indexOf(playerName) < state.biddingOrder.indexOf(highestBidder))){
+        highestBid = potValue;
+        highestBidder = playerName;
+
+      }
+    }
+  });
+  return highestBidder;
+}
+
 export { 
   ACTION_SELECTION,
   BIDDING,
@@ -78,4 +97,5 @@ export {
   PotValue,
   canTarget,
   PotEmpty,
+  getBidWinner,
 };
