@@ -102,9 +102,7 @@ var timerEvent = null;
 var itemStash = [];
 
 for(var i = 0; i < STACK_SIZE; i++){
-  ITEMS.forEach((item, _) => {
-    itemStash.push(item);
-  });
+  itemStash.push(...ITEMS);
 }
 
 
@@ -165,7 +163,7 @@ function ProgressTurn(){
   if(state.turnCounter % lobby.length === 0){
     InfuseFunds();
   }
-  if(stash.length === 0){
+  if(itemStash.length === 0){
     state.stashEmpty = true;
   }
 }
