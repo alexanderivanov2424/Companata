@@ -1,17 +1,31 @@
-const path = require('path');
-const { createServer } = require('http');
+import { createServer } from 'http';
 
-const express = require('express');
-const session = require('express-session');
-const bodyParser = require('body-parser');
-const { Server } = require('socket.io');
+import express from 'express';
+import session from 'express-session';
+import bodyParser from 'body-parser';
+import { Server } from 'socket.io';
+
+import { 
+  ACTION_SELECTION,
+  BIDDING,
+  PAY_PASS,
+  TARGETING,
+  VERSUS,
+  STATUS_OFFLINE,
+  STATUS_ONLINE,
+  STACK_SIZE,
+  BIDDING_TIME,
+  ITEMS,
+  PotValue,
+  PotEmpty,
+} from './public/common.mjs';
 
 
 const app = express();
 const server = createServer(app);
 
 const sessionMiddleware = session({
-  secret: 'dontcare',
+  secret: 'dontcare', //TODO different secret on each startup
   resave: false,
   saveUninitialized: false,
 });
@@ -36,7 +50,7 @@ app.use('/play', (req, res, next) => {
 });
 
 // serve static files in /public directory
-app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
+app.use(express.static('public', { extensions: ['html'] }));
 
 // -------------- Express Routes ------------------
 
@@ -82,23 +96,8 @@ const lobby = [];
 // -------------- Game State --------------------
 var GAME_STARTED = false;
 
-const ACTION_SELECTION = "ActionSelection";
-const BIDDING = "Bidding";
-const PAY_PASS = "PayPass";
-const TARGETING = "Targeting";
-const VERSUS = "Versus";
-
-const STATUS_OFFLINE = "Offline";
-const STATUS_ONLINE = "Online";
-
-
 var state = {};
 var timerEvent = null;
-
-
-const STACK_SIZE = 4;
-const BIDDING_TIME = 10;
-const ITEMS = ["ice", "rock"];
 
 var itemStash = [];
 
@@ -160,13 +159,11 @@ function ProgressTurn(){
   state.phase = ACTION_SELECTION;
   state.stand = [];
   state.target = "";
-  timer = 0;
+  state.timer = 0;
   state.confirms = [];
-}
-
-function PotValue(playerName){
-  const pot = state.players[playerName].pot;
-  return pot.v5 * 5 + pot.v10 * 10 + pot.v25 * 25 + pot.v50 * 50;
+  if(state.turnCounter % 3 === 1){
+    InfuseFunds();
+  }
 }
 
 function clearPot(playerName){
@@ -244,6 +241,10 @@ function PayCoin(fromPlayer, toPlayer, coin){
     return;
   }
   state.players[fromPlayer].wallet[coin] -= 1;
+  state.players[toPlayer].wallet[coin] += 1;
+}
+
+function GiveCoin(toPlayer, coin){
   state.players[toPlayer].wallet[coin] += 1;
 }
 
@@ -330,14 +331,14 @@ function Event_StartTargetingPhase(){
   }
   var canTarget = false;
   for (const [ownItem, ownItemNumber] of Object.entries(state.players[state.turn].items)) {
-    if(ownItemNumber <=0 || ownItemNumber >= STACK_SIZE){
+    if(ownItemNumber <= 0 || ownItemNumber >= STACK_SIZE){
       continue;
     }
     lobby.forEach((otherPlayerName, i) => {
       if(otherPlayerName === state.turn){
         return;
       }
-      for (const [otherItem, otherItemNumber] of Object.entries(state.players[state.turn].items)) {
+      for (const [otherItem, otherItemNumber] of Object.entries(state.players[otherPlayerName].items)) {
         if(otherItemNumber <=0 || otherItemNumber >= STACK_SIZE){
           continue;
         }
@@ -398,12 +399,16 @@ function Event_ConfirmBidVersus(playerName){ //who is confirming
     console.warn("confirming player already confirmed");
     return;
   }
+  if(PotEmpty(state, playerName)){
+    console.warn("cannot submit without bidding");
+    return;
+  }
   state.confirms.push(playerName);
   if(state.confirms.includes(state.turn) && state.confirms.includes(state.target)){
     state.confirms = [];
     
-    const targetPlayerPot = PotValue(state.target);
-    const turnPlayerPot = PotValue(state.turn);
+    const targetPlayerPot = PotValue(state, state.target);
+    const turnPlayerPot = PotValue(state, state.turn);
     if(targetPlayerPot > turnPlayerPot){
       ClaimStand(state.target);
     } else if(targetPlayerPot < turnPlayerPot){
@@ -430,8 +435,8 @@ function BiddingTimeout(){ //when bidding times out
     if(state.confirms.includes(playerName)){
       return;
     }
-    const potValue = PotValue(playerName);
-    if(potValue > 0 && potValue > highestBid){
+    const potValue = PotValue(state, playerName);
+    if(!PotEmpty(state, playerName) && potValue > highestBid){
       highestBid = potValue;
       highestBidder = playerName;
     }
@@ -473,11 +478,11 @@ function Event_ChoosePay(playerName){ //owner player pays for new item
     console.warn("Player paying on bid while it is not their turn");
     return;
   }
-  if(PotValue(state.target) > playerMoney(state.turn)){
+  if(PotValue(state, state.target) > playerMoney(state.turn)){
     console.warn("Player doesn't have enough money to pay");
     return;
   }
-  Pay(state.turn, state.target, PotValue(state.target));
+  Pay(state.turn, state.target, PotValue(state, state.target));
   SendPot(state.target, state.target);
   ClaimStand(state.turn);
   ProgressTurn();
@@ -509,7 +514,12 @@ function Event_CancelBidVersus(playerName){ //remove bid from pot in versus phas
 }
 
 function InfuseFunds(){
-  //TODO based on turn counter?
+  lobby.forEach((name) => {
+    GiveCoin(name, "v5");
+    GiveCoin(name, "v10");
+    GiveCoin(name, "v25");
+    GiveCoin(name, "v50");
+  })
 }
 
 // -------------- Socket.IO Events ----------------

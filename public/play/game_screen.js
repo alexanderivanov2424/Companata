@@ -1,3 +1,38 @@
+import { 
+  ACTION_SELECTION,
+  BIDDING,
+  PAY_PASS,
+  TARGETING,
+  VERSUS,
+  STATUS_OFFLINE,
+  STATUS_ONLINE,
+  STACK_SIZE,
+  BIDDING_TIME,
+  ITEMS,
+  PotValue,
+  canTarget,
+  PotEmpty,
+} from './common.mjs';
+
+
+//TODO:
+// paying when not enough low denominations broken
+// make player status horizontal box so that you can have more than one at once
+// who is currently winning the bid
+// move shared code to another file
+// prevent text selecting on coins
+// bidding when no more items to generate
+// add win condition and win screen
+// icon art
+
+// first person to bid amount wins in tie
+// lobby changing order needs to be fixed
+
+// Extra features
+// hide/show wallet (later)
+// animations
+// legend for the items (maybe hover text)
+
 /*
 Phases:
 ActionSelection - select if next phase is Bidding (big for what is on the stand) or Targeting (target another players item)
@@ -9,41 +44,8 @@ Versus - current turn and target each place bids for items on stand
 maybe some explicit animation phases so that there is time to play animations? these can probably be added later as needed.
 
 */
-const ACTION_SELECTION = "ActionSelection"
-const BIDDING = "Bidding"
-const PAY_PASS = "PayPass"
-const TARGETING = "Targeting"
-const VERSUS = "Versus"
 
-const STATUS_OFFLINE = "Offline";
-const STATUS_ONLINE = "Online";
 
-//TODO add to state:
-//make player status horizontal box so that you can have more than one at once
-//move shared code to another file
-
-// turn counter
-// visibility for versus
-// targeting highlight items you can take
-
-// Extra features
-// hide/show wallet (later)
-// animations
-// legend for the items (maybe hover text)
-
-function PotValue(playerName){
-  const pot = state.players[playerName].pot;
-  return pot.v5 * 5 + pot.v10 * 10 + pot.v25 * 25 + pot.v50 * 50;
-}
-
-function canTarget(name, item){
-  if(item in state.players[state.turn].items && state.players[state.turn].items[item] > 0 && state.players[state.turn].items[item] < 4){
-    if(item in state.players[name].items && state.players[name].items[item] > 0 && state.players[name].items[item] < 4){
-      return true;
-    }
-  }
-  return false;
-}
 
 function TargetingButton() { // button to enter Targeting phase
   return (
@@ -116,11 +118,12 @@ function ButtonBox({ owner, phase, turn, target }) { // horizontal box to hold b
   switch (phase) {
     case ACTION_SELECTION:
       if (owner === turn) {
+        
         buttons = [<TargetingButton key="TargetingButton" />, <BiddingButton key="BiddingButton" />];
       }
       break;
     case BIDDING:
-      if(!state.confirms.includes(owner) && PotValue(owner) > 0){
+      if(!state.confirms.includes(owner) && !PotEmpty(state, owner)){
         buttons = [<CancelBid key="CancelBid"/>];
       }
       break;
@@ -133,7 +136,10 @@ function ButtonBox({ owner, phase, turn, target }) { // horizontal box to hold b
       break;
     case VERSUS:
       if (owner === turn || owner === target) {
-        buttons = [<SubmitBidButton key="SubmitBidButton" />, <CancelBid key="CancelBid" />];
+        if(!PotEmpty(state, owner)){
+          buttons = [<SubmitBidButton key="SubmitBidButton" />];
+        }
+        buttons.push(<CancelBid key="CancelBid" />);
       }
       break;
     default:
@@ -164,13 +170,13 @@ function Middle({ players }) { // the middle of the table
   }
   return (
     <div className="middle">
-      {lobby.map((key, i) => (
+      {lobby.map((name, i) => (
         <Seat
           inner radius={100}
           angle={(2 * Math.PI) / lobby.length * (i - lobby.indexOf(owner))}
           key={i}
         >
-          <Wallet isPot {...players[key].pot} />
+          <Wallet name={name} {...players[name].pot} isPot/>
         </Seat>
       ))}
     </div>
@@ -247,7 +253,15 @@ function CoinStack({ value, amount, isPot }) { // TODO: need to overlap coins to
   );
 }
 
-function Wallet({ v0, v5, v10, v25, v50, isPot }) {
+function Wallet({ name, v0, v5, v10, v25, v50, isPot }) {
+  if(state.phase === VERSUS){
+    if(owner === state.target && name === state.turn){
+      return (<div className="wallet wallet-hidden"/>);
+    }
+    if(owner === state.turn && name === state.target){
+      return (<div className="wallet wallet-hidden"/>);
+    }
+  }
   return (
     <div className="wallet">
       <CoinStack value={0} amount={v0} isPot={isPot} />
@@ -260,18 +274,19 @@ function Wallet({ v0, v5, v10, v25, v50, isPot }) {
 }
 
 function Item({ name, item , amount}) {
-  if(name === "" || state.phase !== TARGETING || !canTarget(name, item)){
-    return <div className={`item ${item}`}> {amount} </div>;
+  if(name === "" || state.phase !== TARGETING || !canTarget(state, name, item)){
+    return <div title={item} className={`item ${item}`}> {amount} </div>;
   }
   if(state.turn === owner){ //click event and highlight if owning player
     return <div 
+    title={item} 
     className={`item ${item} targetable`}
     onClick={() => socket.emit('game.action.target', name, item)}
     >
       {amount}
     </div>;
   } else { //otherwise only highlight
-    return <div className={`item ${item} targetable`}> {amount} </div>;
+    return <div title={item} className={`item ${item} targetable`}> {amount} </div>;
   }
   
 }
@@ -297,7 +312,7 @@ function Player({ name, wallet, items }) {
   return (
     <div className="player">
       <Role name={name} />
-      <Wallet {...wallet} />
+      <Wallet name={name} {...wallet} />
       <PlayerName name={name} />
       <Pouch name={name} items={items} />
     </div>
@@ -385,3 +400,5 @@ function GameScreen() {
 const domContainer = document.querySelector('#root');
 const root = ReactDOM.createRoot(domContainer);
 root.render(<GameScreen />);
+
+console.log(PotValue);

@@ -54,6 +54,7 @@ body {
 }
 
 .stand {
+  width: 50px;
   position: relative;
   display: flex;
   flex-direction: row;
@@ -93,6 +94,10 @@ body {
   flex-direction: row;
 }
 
+.wallet-hidden {
+  background-color: rgb(76, 76, 76);
+}
+
 .role {
   width:40px;
   height:40px;
@@ -123,7 +128,8 @@ body {
   min-height: 20px;
   transform: rotate(180deg);
   position: relative;
-  background: rgb(24, 199, 36);
+  background: rgb(228, 228, 228);
+  border-radius: 20%;
 }
 
 .coin {
@@ -132,6 +138,8 @@ body {
   transform: rotate(180deg);
   text-align: center;
   position: relative;
+  border-style: solid;
+  border-width: 1px;
   border-radius: 50%;
   font-family: "Monaco", monospace;
 }
@@ -172,20 +180,57 @@ body {
 }
 
 .targetable {
-  border-width: thick;
-  border-color: black;
+  border: 3px solid black;
 }
 
 .ice {
   background-color: rgb(159, 220, 240);
 }
 
+.rock {
+  background-color: rgb(51, 52, 58);
+  color: white;
+  border-color: rgb(255, 0, 0);
+}
+
 .bread {
   background-color: rgb(209, 158, 70);
 }
 
-.rock {
-  background-color: rgb(51, 52, 58);
+.carrot {
+  background-color: rgb(231, 112, 26);
+}
+
+.pill {
+  background-color: rgb(95, 241, 226);
+}
+
+.fish {
+  background-color: rgb(80, 129, 219);
+}
+
+.log {
+  background-color: rgb(90, 51, 26);
   color: white;
-  border-color: white;
+}
+
+.cherry {
+  background-color: rgb(222, 21, 78);
+}
+
+.water {
+  background-color: rgb(29, 0, 125);
+  color: white;
+}
+
+.sauce {
+  background-color: rgb(169, 42, 42);
+}
+
+.juice {
+  background-color: rgb(255, 255, 0);
+}
+
+.mold {
+  background-color: rgb(66, 161, 69);
 }
