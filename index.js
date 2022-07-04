@@ -541,31 +541,26 @@ io.on('connection', (socket) => {
 
   console.log(`${username} connected`);
   if (!lobby.includes(username)) {
-    lobby.push(username);
-    io.emit('lobby.update.lobby_list', lobby);
-    io.emit('game.update.lobby', lobby);
-    if(GAME_STARTED && Object.keys(state.players).includes(username)){
-      state.players[username].status = STATUS_ONLINE;
+    if (!GAME_STARTED) {
+      lobby.push(username);
+      io.emit('lobby.update.lobby_list', lobby);
+    } else {
+      console.warn(`${username} could not join game because it already started`);
     }
+  }
+
+  if (GAME_STARTED && state.players.hasOwnProperty(username)) {
+    state.players[username].status = STATUS_ONLINE;
   }
 
   socket.on('disconnect', () => {
     console.log(`${username} disconnected`);
-
-    // Remove disconnected player from the lobby list if already joined
-    const index = lobby.indexOf(username);
-    if (index !== -1) {
-      lobby.splice(index, 1);
-    }
-    io.emit('lobby.update.lobby_list', lobby);
-
-    if(GAME_STARTED && Object.keys(state.players).includes(username)){
+    if (GAME_STARTED && state.players.hasOwnProperty(username)) {
       state.players[username].status = STATUS_OFFLINE;
     }
   });
 
   socket.emit('lobby.update.client_username', username);
-  io.emit('lobby.update.lobby_list', lobby);
 
   socket.join(sessionId);
 
