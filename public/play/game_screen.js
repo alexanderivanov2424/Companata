@@ -402,6 +402,7 @@ let owner = '';
 let lobby = [];
 let state = initState;
 
+var secretClicks = 0;
 var tableTypeIndex = 0;
 const tableTypes = ["none", "wood", "metal", "plastic"];
 
@@ -459,6 +460,9 @@ root.render(<GameScreen />);
 
 const button = document.getElementById("secret");
 button.onclick = function () {
-  tableTypeIndex += 1;
-  tableTypeIndex %= tableTypes.length;
+  secretClicks ++;
+  if(secretClicks > 30){
+    tableTypeIndex += 1;
+    tableTypeIndex %= tableTypes.length;
+  }
 };
