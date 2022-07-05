@@ -3,12 +3,14 @@ const BIDDING = "Bidding";
 const PAY_PASS = "PayPass";
 const TARGETING = "Targeting";
 const VERSUS = "Versus";
+const VERSUS_HOLD = "VersusHold";
 
 const STATUS_OFFLINE = "Offline";
 const STATUS_ONLINE = "Online";
 
 const STACK_SIZE = 4;
 const BIDDING_TIME = 10;
+const VERSUS_HOLD_TIME = 3;
 
 
 function shuffle(array) {
@@ -40,7 +42,8 @@ const ITEM_TO_HOVER = {
 }
 
 const ITEMS_ALL = shuffle([...Object.keys(ITEM_TO_HOVER)]);
-const ITEMS = ITEMS_ALL;//ITEMS_ALL.slice(0, 15);
+// const ITEMS = ITEMS_ALL;
+const ITEMS = ITEMS_ALL.slice(0, 1);
 
 function PotValue(state, playerName){
   const pot = state.players[playerName].pot;
@@ -88,10 +91,12 @@ export {
   PAY_PASS,
   TARGETING,
   VERSUS,
+  VERSUS_HOLD,
   STATUS_OFFLINE,
   STATUS_ONLINE,
   STACK_SIZE,
   BIDDING_TIME,
+  VERSUS_HOLD_TIME,
   ITEMS,
   ITEM_TO_HOVER,
   PotValue,

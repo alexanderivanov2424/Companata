@@ -4,10 +4,12 @@ import {
   PAY_PASS,
   TARGETING,
   VERSUS,
+  VERSUS_HOLD,
   STATUS_OFFLINE,
   STATUS_ONLINE,
   STACK_SIZE,
   BIDDING_TIME,
+  VERSUS_HOLD_TIME,
   ITEMS,
   ITEM_TO_HOVER,
   PotValue,
@@ -24,6 +26,7 @@ import {
 
 // P2:
 // animations
+// auto end bid if everyone cancels
 
 // P3:
 // redo button box logic (very messy)

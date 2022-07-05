@@ -11,10 +11,12 @@ import {
   PAY_PASS,
   TARGETING,
   VERSUS,
+  VERSUS_HOLD,
   STATUS_OFFLINE,
   STATUS_ONLINE,
   STACK_SIZE,
   BIDDING_TIME,
+  VERSUS_HOLD_TIME,
   ITEMS,
   PotValue,
   PotEmpty,
@@ -344,6 +346,28 @@ function Event_MakeBid(playerName, value){
   }
 }
 
+function BiddingTimeout(){ //when bidding times out
+  if(state.phase !== BIDDING){
+    console.error("Bidding timeout not in bidding phase");
+    return;
+  }
+  clearTimeout(timerEvent);
+  state.timer = 0;
+  const highestBidder = getBidWinner(state, lobby);
+  if(highestBidder === state.turn){
+    ClaimStand(state.turn);
+    ProgressTurn();
+    return;
+  }
+  state.target = highestBidder;
+  lobby.forEach( (playerName) => {
+    if(playerName !== state.target){
+      SendPot(playerName, playerName);
+    }
+  });
+  state.phase = PAY_PASS;
+}
+
 function Event_StartTargetingPhase(){
   if(state.phase !== ACTION_SELECTION){
     console.warn("Attempt to start targeting while not in action select phase");
@@ -425,43 +449,26 @@ function Event_ConfirmBidVersus(playerName){ //who is confirming
   }
   state.confirms.push(playerName);
   if(state.confirms.includes(state.turn) && state.confirms.includes(state.target)){
-    state.confirms = [];
-    
-    const targetPlayerPot = PotValue(state, state.target);
-    const turnPlayerPot = PotValue(state, state.turn);
-    if(targetPlayerPot > turnPlayerPot){
-      ClaimStand(state.target);
-    } else if(targetPlayerPot < turnPlayerPot){
-      ClaimStand(state.turn);
-    } else {
-      SplitStand(state.target, state.turn);
-    }
-    SendPot(state.target, state.turn);
-    SendPot(state.turn, state.target);
-    ProgressTurn();
+    state.phase = VERSUS_HOLD;
+    setTimeout(VersusHoldTimeout, VERSUS_HOLD_TIME * 1000);
   }
 }
 
-function BiddingTimeout(){ //when bidding times out
-  if(state.phase !== BIDDING){
-    console.error("Bidding timeout not in bidding phase");
-    return;
-  }
-  clearTimeout(timerEvent);
-  state.timer = 0;
-  const highestBidder = getBidWinner(state, lobby);
-  if(highestBidder === state.turn){
+function VersusHoldTimeout(){
+  state.confirms = [];
+    
+  const targetPlayerPot = PotValue(state, state.target);
+  const turnPlayerPot = PotValue(state, state.turn);
+  if(targetPlayerPot > turnPlayerPot){
+    ClaimStand(state.target);
+  } else if(targetPlayerPot < turnPlayerPot){
     ClaimStand(state.turn);
-    ProgressTurn();
-    return;
+  } else {
+    SplitStand(state.target, state.turn);
   }
-  state.target = highestBidder;
-  lobby.forEach( (playerName) => {
-    if(playerName !== state.target){
-      SendPot(playerName, playerName);
-    }
-  });
-  state.phase = PAY_PASS;
+  SendPot(state.target, state.turn);
+  SendPot(state.turn, state.target);
+  ProgressTurn();
 }
 
 function Event_ChoosePass(playerName){ //owner player passes on new item
