@@ -39,6 +39,7 @@ const ITEM_TO_HOVER = {
   kettle: "Kettle",
   virus: "The Rona",
   leg: "Chicken Leg",
+  sushi: "Sushi",
 }
 
 const ITEMS_ALL = shuffle([...Object.keys(ITEM_TO_HOVER)]);
