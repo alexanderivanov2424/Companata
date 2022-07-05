@@ -22,5 +22,11 @@
     "express": "^4.18.1",
     "express-session": "^1.17.3",
     "socket.io": "^4.5.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.19.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-react": "^7.30.1",
+    "prettier": "2.7.1"
   }
 }

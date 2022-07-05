@@ -15,9 +15,9 @@
 
       let localUsername = null;
 
-      const players = document.getElementById("players");
+      const players = document.getElementById('players');
       //const joinButton = document.getElementById("join");
-      const startButton = document.getElementById("start");
+      const startButton = document.getElementById('start');
 
       //joinButton.addEventListener('click', () => {
       //  socket.emit('lobby.join');
@@ -36,17 +36,19 @@
         const isHost = host && localUsername === host;
         startButton.disabled = !isHost;
 
-        players.replaceChildren(...lobby.map((username) => {
-          const button = document.createElement('button');
-          button.innerHTML = "kick";
-          button.onclick = function () {
-            socket.emit('lobby.voteKick', localUsername, username);
-          };
-          const item = document.createElement('li');
-          item.innerText = username;
-          item.appendChild(button);
-          return item;
-        }));
+        players.replaceChildren(
+          ...lobby.map((username) => {
+            const button = document.createElement('button');
+            button.innerHTML = 'kick';
+            button.onclick = function () {
+              socket.emit('lobby.voteKick', localUsername, username);
+            };
+            const item = document.createElement('li');
+            item.innerText = username;
+            item.appendChild(button);
+            return item;
+          })
+        );
       });
 
       socket.on('redirect', (url) => {
