@@ -9,6 +9,13 @@
    -ms-user-select: none; /* Internet Explorer/Edge */
 }
 
+:root {
+  --coin-size: 20px;
+  --item-size: 30px;
+  --hidden-wallet-width: 100px;
+  --hidden-wallet-height: 80px;
+}
+
 body {
   padding: 2em;
   height: 100vh;
@@ -111,7 +118,23 @@ body {
 }
 
 .wallet-hidden {
+  min-width: var(--hidden-wallet-width);
+  min-height: var(--hidden-wallet-height);
   background-color: rgb(76, 76, 76);
+  border-radius: 20%;
+  z-index: 2;
+}
+
+.own-hidden {
+  background-color: rgba(76, 76, 76, .4);
+}
+
+.wallet-hidden-icon {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  border-radius: 20%;
+  transform: translateY(-20%);
 }
 
 .role {
@@ -145,17 +168,20 @@ body {
 }
 
 .coin-stack {
-  width: 20px;
-  min-height: 20px;
+  width: var(--coin-size);
+  min-height: var(--coin-size);
   transform: rotate(180deg);
   position: relative;
-  background: rgb(228, 228, 228);
   border-radius: 20%;
 }
 
+coin-stack-pot{
+  background: rgb(228, 228, 228);
+}
+
 .coin {
-  width: 20px;
-  height: 20px;
+  width: var(--coin-size);
+  height: var(--coin-size);
   transform: rotate(180deg);
   text-align: center;
   position: relative;
@@ -192,8 +218,8 @@ body {
 }
 
 .item-box {
-  width: 30px;
-  height: 30px;
+  width: var(--item-size);
+  height: var(--item-size);
 }
 
 .item {
@@ -221,7 +247,6 @@ body {
   left: 0;
   position: absolute;
   text-align: center;
-  position: relative;
   border-radius: 20%;
 }
 

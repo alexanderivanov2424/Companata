@@ -110,6 +110,17 @@ function CancelBid() { // button to retract bid (during Bidding or Versus phase)
   );
 }
 
+function ToggleScreenButton() {
+  return (
+    <button
+      className="button button-screen"
+      onClick={() => socket.emit('game.action.toggle_screen', owner)}
+    >
+      Screen
+    </button>
+  );
+}
+
 function ButtonBox({ owner, phase, turn, target }) { // horizontal box to hold buttons
   let buttons = [];
   switch (phase) {
@@ -145,7 +156,7 @@ function ButtonBox({ owner, phase, turn, target }) { // horizontal box to hold b
       console.error(`unrecognized phase ${phase}`);
       break;
   }
-
+  buttons.push(<ToggleScreenButton key="ToggleScreenButton" />)
   return (
     <div className="button-box">
       {buttons}
@@ -203,22 +214,22 @@ function StatusBox ({ name }){
   }
   var statusList = [];
   if(state.players[name].status === STATUS_OFFLINE){
-    statusList.push(<Role roleType="offline" />);
+    statusList.push(<Role roleType="offline" key="offline"/>);
   }
   if(state.turn === name){
-    statusList.push(<Role roleType="turn" />);
+    statusList.push(<Role roleType="turn" key="turn"/>);
   }
   if(state.target === name && (state.phase === VERSUS || state.phase === PAY_PASS)){
-    statusList.push(<Role roleType="target" />);
+    statusList.push(<Role roleType="target" key="target"/>);
   }
   if(state.phase === VERSUS && state.confirms.includes(name)){
-    statusList.push(<Role roleType="submitted" />);
+    statusList.push(<Role roleType="submitted" key="submitted"/>);
   }
   if(state.phase === BIDDING && state.confirms.includes(name)){
-    statusList.push(<Role roleType="canceled" />);
+    statusList.push(<Role roleType="canceled" key="canceled"/>);
   }
   if((state.phase === BIDDING || state.phase === PAY_PASS) && name === getBidWinner(state, lobby)){
-    statusList.push(<Role roleType="highest-bidder" />);
+    statusList.push(<Role roleType="highest-bidder" key="highest-bidder"/>);
   }
   return (<div className="status-box">
     {statusList}
@@ -250,7 +261,7 @@ function CoinStack({ value, amount, isPot }) { // TODO: need to overlap coins to
   const maxStackSize = 80;
   const shift = amount > 4 ? (maxStackSize - amount * coinSize) / (amount - 1) : 0;
   return (
-    <div className="coin-stack">
+    <div className={`coin-stack ${isPot ? "coin-stack-pot" : ""}`}>
       {new Array(amount).fill().map((_, i) => (
         <div style={{ marginTop: i === 0 ? 0 : shift }} key={i}>
           {isPot ? <PotCoin value={value} /> : <Coin value={value} />}
@@ -261,23 +272,48 @@ function CoinStack({ value, amount, isPot }) { // TODO: need to overlap coins to
 }
 
 function Wallet({ name, v0, v5, v10, v25, v50, isPot }) {
+  var hideWallet = false;
   if(state.phase === VERSUS){
     if(owner === state.target && name === state.turn){
-      return (<div className="wallet wallet-hidden"/>);
+      hideWallet = true;
     }
     if(owner === state.turn && name === state.target){
-      return (<div className="wallet wallet-hidden"/>);
+      hideWallet = true;
     }
   }
-  return (
-    <div className="wallet">
-      <CoinStack value={0} amount={v0} isPot={isPot} />
-      <CoinStack value={5} amount={v5} isPot={isPot} />
-      <CoinStack value={10} amount={v10} isPot={isPot} />
-      <CoinStack value={25} amount={v25} isPot={isPot} />
-      <CoinStack value={50} amount={v50} isPot={isPot} />
-    </div>
-  );
+  if(!isPot && state.players[name].hidden){
+    hideWallet = true;
+  }
+  if(hideWallet){
+    if(owner === name){
+      return (
+        <div className="wallet wallet-hidden own-hidden">
+          <CoinStack value={0} amount={v0} isPot={isPot} />
+          <CoinStack value={5} amount={v5} isPot={isPot} />
+          <CoinStack value={10} amount={v10} isPot={isPot} />
+          <CoinStack value={25} amount={v25} isPot={isPot} />
+          <CoinStack value={50} amount={v50} isPot={isPot} />
+        </div>
+      );
+    } else {
+      return (
+        <div className="wallet wallet-hidden">
+          <img className="wallet-hidden-icon" src="./icons/hidden.png"></img>
+        </div>
+      );
+    }
+  } else {
+    return (
+      <div className="wallet">
+        <CoinStack value={0} amount={v0} isPot={isPot} />
+        <CoinStack value={5} amount={v5} isPot={isPot} />
+        <CoinStack value={10} amount={v10} isPot={isPot} />
+        <CoinStack value={25} amount={v25} isPot={isPot} />
+        <CoinStack value={50} amount={v50} isPot={isPot} />
+      </div>
+    );
+  }
+  
 }
 
 function Item({ name, item , amount}) {

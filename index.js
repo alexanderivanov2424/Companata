@@ -127,6 +127,7 @@ function InitGameState(lobby){
       {
         name: name,
         status: STATUS_OFFLINE,
+        hidden: false,
         wallet: {
           v0: 2,
           v5: 4,
@@ -521,6 +522,10 @@ function Event_CancelBidVersus(playerName){ //remove bid from pot in versus phas
   SendPot(playerName, playerName);
 }
 
+function Event_ToggleScreen(playerName){
+  state.players[playerName].hidden = !state.players[playerName].hidden;
+}
+
 function InfuseFunds(level){
   switch(level) {
     case 1:
@@ -691,6 +696,10 @@ io.on('connection', (socket) => {
     } else if(state.phase === VERSUS){
       Event_CancelBidVersus(playerName);
     }
+  });
+
+  socket.on('game.action.toggle_screen', (playerName) => {
+    Event_ToggleScreen(playerName);
   });
 
 });
