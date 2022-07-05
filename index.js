@@ -523,6 +523,7 @@ function Event_CancelBidVersus(playerName){ //remove bid from pot in versus phas
 }
 
 function Event_ToggleScreen(playerName){
+  console.log(playerName);
   state.players[playerName].hidden = !state.players[playerName].hidden;
 }
 

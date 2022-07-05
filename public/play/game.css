@@ -36,6 +36,15 @@ body {
   border-radius: 50%;
 }
 
+.table-texture {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  margin: 0 auto;
+  border-radius: 50%;
+  z-index: -10;
+}
+
 .button-box {
   padding: 1em;
   display: flex;
@@ -46,7 +55,25 @@ body {
   position: absolute;
   bottom: 0;
   right: 0;
-  background-color: blue;
+  background-color: rgb(132, 132, 255);
+}
+
+.button {
+  display: inline-block;
+  outline: 0;
+  border: none;
+  cursor: pointer;
+  height: 40px;
+  padding: 12px 17px;
+  border-radius: 50px;
+  background-color: lightgray;
+  color: black;
+  font-size: 16px;
+  font-weight: 500;  
+}
+
+.button-toggled {
+  background-color: gray;
 }
 
 .center {

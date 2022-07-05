@@ -18,16 +18,15 @@ import {
 
 
 //TODO:
-// move shared code to another file
+// P1: 
+// owner not being set properly (ToggleScreenButton needs this)
 // add win condition and win screen
-// redo button box logic (very messy)
 
-// first person to bid amount wins in tie
-// lobby changing order needs to be fixed
-
-// Extra features
-// hide/show wallet (later)
+// P2:
 // animations
+
+// P3:
+// redo button box logic (very messy)
 // legend for the items (maybe hover text)
 
 /*
@@ -37,12 +36,7 @@ Bidding - new item is added to stand, everyone except current turn bids for item
 PayPass - current turn either buys item on stand or gives it to target but takes money
 Targeting - current turn selects whos item they want to target
 Versus - current turn and target each place bids for items on stand
-
-maybe some explicit animation phases so that there is time to play animations? these can probably be added later as needed.
-
 */
-
-
 
 function TargetingButton() { // button to enter Targeting phase
   return (
@@ -113,7 +107,7 @@ function CancelBid() { // button to retract bid (during Bidding or Versus phase)
 function ToggleScreenButton() {
   return (
     <button
-      className="button button-screen"
+      className={`button button-screen ${(false && state.players[owner].hidden) ? "button-toggle" : ""}`}
       onClick={() => socket.emit('game.action.toggle_screen', owner)}
     >
       Screen
@@ -156,7 +150,7 @@ function ButtonBox({ owner, phase, turn, target }) { // horizontal box to hold b
       console.error(`unrecognized phase ${phase}`);
       break;
   }
-  buttons.push(<ToggleScreenButton key="ToggleScreenButton" />)
+  buttons.push(<ToggleScreenButton owner={owner} key="ToggleScreenButton" />)
   return (
     <div className="button-box">
       {buttons}
@@ -408,6 +402,9 @@ let owner = '';
 let lobby = [];
 let state = initState;
 
+var tableTypeIndex = 0;
+const tableTypes = ["none", "wood", "metal", "plastic"];
+
 function GameScreen() {
   const [, updateState] = React.useState();
   const forceUpdate = React.useCallback(() => updateState({}), []);
@@ -436,7 +433,8 @@ function GameScreen() {
 
   return (
     <div className="room">
-      <div className="table">
+      <div className="table" >
+        <img className="table-texture" src={`./icons/table/${tableTypes[tableTypeIndex]}.jpg`}></img>
         {lobby.map((key, i) => (
           <Seat
             radius={400}
@@ -459,4 +457,8 @@ const domContainer = document.querySelector('#root');
 const root = ReactDOM.createRoot(domContainer);
 root.render(<GameScreen />);
 
-console.log(PotValue);
+const button = document.getElementById("secret");
+button.onclick = function () {
+  tableTypeIndex += 1;
+  tableTypeIndex %= tableTypes.length;
+};
