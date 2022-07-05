@@ -42,8 +42,8 @@ const ITEM_TO_HOVER = {
 }
 
 const ITEMS_ALL = shuffle([...Object.keys(ITEM_TO_HOVER)]);
-// const ITEMS = ITEMS_ALL;
-const ITEMS = ITEMS_ALL.slice(0, 1);
+const ITEMS = ITEMS_ALL;
+// const ITEMS = ITEMS_ALL.slice(0, 1);
 
 function PotValue(state, playerName){
   const pot = state.players[playerName].pot;
