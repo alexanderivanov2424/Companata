@@ -1,4 +1,6 @@
-import { 
+/* global React, ReactDOM, io */
+
+import {
   ACTION_SELECTION,
   BIDDING,
   PAY_PASS,
@@ -18,9 +20,8 @@ import {
   getBidWinner,
 } from './common.mjs';
 
-
 //TODO:
-// P1: 
+// P1:
 // owner not being set properly (ToggleScreenButton needs this)
 // add win condition and win screen
 
@@ -41,7 +42,8 @@ Targeting - current turn selects whos item they want to target
 Versus - current turn and target each place bids for items on stand
 */
 
-function TargetingButton() { // button to enter Targeting phase
+function TargetingButton() {
+  // button to enter Targeting phase
   return (
     <button
       className="button button-targeting"
@@ -52,7 +54,8 @@ function TargetingButton() { // button to enter Targeting phase
   );
 }
 
-function SubmitBidButton() { // button to submit secret bid amount in Targeting phase
+function SubmitBidButton() {
+  // button to submit secret bid amount in Targeting phase
   return (
     <button
       className="button button-submit"
@@ -63,7 +66,8 @@ function SubmitBidButton() { // button to submit secret bid amount in Targeting 
   );
 }
 
-function BiddingButton() { // button to ender Bidding phase
+function BiddingButton() {
+  // button to ender Bidding phase
   return (
     <button
       className="button button-bidding"
@@ -74,7 +78,8 @@ function BiddingButton() { // button to ender Bidding phase
   );
 }
 
-function PayButton() { // pay bid amount for item
+function PayButton() {
+  // pay bid amount for item
   return (
     <button
       className="button button-pay"
@@ -85,7 +90,8 @@ function PayButton() { // pay bid amount for item
   );
 }
 
-function PassButton() { // take bid amount but no item
+function PassButton() {
+  // take bid amount but no item
   return (
     <button
       className="button button-pass"
@@ -96,7 +102,8 @@ function PassButton() { // take bid amount but no item
   );
 }
 
-function CancelBid() { // button to retract bid (during Bidding or Versus phase)
+function CancelBid() {
+  // button to retract bid (during Bidding or Versus phase)
   return (
     <button
       className="button button-cancel"
@@ -110,7 +117,9 @@ function CancelBid() { // button to retract bid (during Bidding or Versus phase)
 function ToggleScreenButton() {
   return (
     <button
-      className={`button button-screen ${(false && state.players[owner].hidden) ? "button-toggle" : ""}`}
+      className={`button button-screen ${
+        false && state.players[owner].hidden ? 'button-toggle' : ''
+      }`}
       onClick={() => socket.emit('game.action.toggle_screen', owner)}
     >
       Screen
@@ -118,32 +127,36 @@ function ToggleScreenButton() {
   );
 }
 
-function ButtonBox({ owner, phase, turn, target }) { // horizontal box to hold buttons
+function ButtonBox({ owner, phase, turn, target }) {
+  // horizontal box to hold buttons
   let buttons = [];
   switch (phase) {
     case ACTION_SELECTION:
       if (owner === turn) {
-        if(!state.stashEmpty){
+        if (!state.stashEmpty) {
           buttons = [<BiddingButton key="BiddingButton" />];
         }
         buttons.push(<TargetingButton key="TargetingButton" />);
       }
       break;
     case BIDDING:
-      if(!state.confirms.includes(owner) && !PotEmpty(state, owner)){
-        buttons = [<CancelBid key="CancelBid"/>];
+      if (!state.confirms.includes(owner) && !PotEmpty(state, owner)) {
+        buttons = [<CancelBid key="CancelBid" />];
       }
       break;
     case PAY_PASS:
       if (owner === turn) {
-        buttons = [<PayButton key="PayButton" />, <PassButton key="PassButton" />];
+        buttons = [
+          <PayButton key="PayButton" />,
+          <PassButton key="PassButton" />,
+        ];
       }
       break;
     case TARGETING:
       break;
     case VERSUS:
       if (owner === turn || owner === target) {
-        if(!PotEmpty(state, owner)){
+        if (!PotEmpty(state, owner)) {
           buttons = [<SubmitBidButton key="SubmitBidButton" />];
         }
         buttons.push(<CancelBid key="CancelBid" />);
@@ -153,93 +166,93 @@ function ButtonBox({ owner, phase, turn, target }) { // horizontal box to hold b
       console.error(`unrecognized phase ${phase}`);
       break;
   }
-  buttons.push(<ToggleScreenButton owner={owner} key="ToggleScreenButton" />)
-  return (
-    <div className="button-box">
-      {buttons}
-    </div>
-  );
-} 
+  buttons.push(<ToggleScreenButton owner={owner} key="ToggleScreenButton" />);
+  return <div className="button-box">{buttons}</div>;
+}
 
-function Stand({ stand }) { // where items in question are placed
+function Stand({ stand }) {
+  // where items in question are placed
   return (
     <div className="stand">
       {stand.map((item, i) => (
-        <Item name={""} item={item} amount={""} key={i} />
+        <Item name={''} item={item} amount={''} key={i} />
       ))}
     </div>
   );
 }
 
-function Middle({ players }) { // the middle of the table
-  if(Object.keys(players).length != lobby.length){
-    return (<div className="middle" />);
+function Middle({ players }) {
+  // the middle of the table
+  if (Object.keys(players).length != lobby.length) {
+    return <div className="middle" />;
   }
   return (
     <div className="middle">
       {lobby.map((name, i) => (
         <Seat
-          inner radius={100}
-          angle={(2 * Math.PI) / lobby.length * (i - lobby.indexOf(owner))}
+          inner
+          radius={100}
+          angle={((2 * Math.PI) / lobby.length) * (i - lobby.indexOf(owner))}
           key={i}
         >
-          <Wallet name={name} {...players[name].pot} isPot/>
+          <Wallet name={name} {...players[name].pot} isPot />
         </Seat>
       ))}
     </div>
   );
 }
 
-function Timer({ timer}){
-  if(state.phase !== BIDDING){
+function Timer({ timer }) {
+  if (state.phase !== BIDDING) {
     return null;
   }
+  return <p className="timer">{timer}</p>;
+}
+
+function Role({ roleType }) {
   return (
-    <p className="timer">{timer}</p>
+    <img
+      className="role"
+      src={`./icons/${roleType}.png`}
+      alt={`${roleType}`}
+    ></img>
   );
 }
 
-function Role({ roleType }){
-  return (
-    <img className="role" src={`./icons/${roleType}.png`} alt={`${roleType}`}></img>
-  )
-}
-
-function StatusBox ({ name }){
-  if(Object.keys(state.players).length != lobby.length){
+function StatusBox({ name }) {
+  if (Object.keys(state.players).length != lobby.length) {
     return null;
   }
   var statusList = [];
-  if(state.players[name].status === STATUS_OFFLINE){
-    statusList.push(<Role roleType="offline" key="offline"/>);
+  if (state.players[name].status === STATUS_OFFLINE) {
+    statusList.push(<Role roleType="offline" key="offline" />);
   }
-  if(state.turn === name){
-    statusList.push(<Role roleType="turn" key="turn"/>);
+  if (state.turn === name) {
+    statusList.push(<Role roleType="turn" key="turn" />);
   }
-  if(state.target === name && (state.phase === VERSUS || state.phase === PAY_PASS)){
-    statusList.push(<Role roleType="target" key="target"/>);
+  if (
+    state.target === name &&
+    (state.phase === VERSUS || state.phase === PAY_PASS)
+  ) {
+    statusList.push(<Role roleType="target" key="target" />);
   }
-  if(state.phase === VERSUS && state.confirms.includes(name)){
-    statusList.push(<Role roleType="submitted" key="submitted"/>);
+  if (state.phase === VERSUS && state.confirms.includes(name)) {
+    statusList.push(<Role roleType="submitted" key="submitted" />);
   }
-  if(state.phase === BIDDING && state.confirms.includes(name)){
-    statusList.push(<Role roleType="canceled" key="canceled"/>);
+  if (state.phase === BIDDING && state.confirms.includes(name)) {
+    statusList.push(<Role roleType="canceled" key="canceled" />);
   }
-  if((state.phase === BIDDING || state.phase === PAY_PASS) && name === getBidWinner(state, lobby)){
-    statusList.push(<Role roleType="highest-bidder" key="highest-bidder"/>);
+  if (
+    (state.phase === BIDDING || state.phase === PAY_PASS) &&
+    name === getBidWinner(state, lobby)
+  ) {
+    statusList.push(<Role roleType="highest-bidder" key="highest-bidder" />);
   }
-  return (<div className="status-box">
-    {statusList}
-  </div>
-  )
+  return <div className="status-box">{statusList}</div>;
 }
 
 function PotCoin({ value }) {
-  return (
-    <div className={`coin coin-${value}`}>
-      {value}
-    </div>
-  );
+  return <div className={`coin coin-${value}`}>{value}</div>;
 }
 
 function Coin({ value }) {
@@ -253,12 +266,14 @@ function Coin({ value }) {
   );
 }
 
-function CoinStack({ value, amount, isPot }) { // TODO: need to overlap coins to fit
+function CoinStack({ value, amount, isPot }) {
+  // TODO: need to overlap coins to fit
   const coinSize = 20;
   const maxStackSize = 80;
-  const shift = amount > 4 ? (maxStackSize - amount * coinSize) / (amount - 1) : 0;
+  const shift =
+    amount > 4 ? (maxStackSize - amount * coinSize) / (amount - 1) : 0;
   return (
-    <div className={`coin-stack ${isPot ? "coin-stack-pot" : ""}`}>
+    <div className={`coin-stack ${isPot ? 'coin-stack-pot' : ''}`}>
       {new Array(amount).fill().map((_, i) => (
         <div style={{ marginTop: i === 0 ? 0 : shift }} key={i}>
           {isPot ? <PotCoin value={value} /> : <Coin value={value} />}
@@ -270,19 +285,19 @@ function CoinStack({ value, amount, isPot }) { // TODO: need to overlap coins to
 
 function Wallet({ name, v0, v5, v10, v25, v50, isPot }) {
   var hideWallet = false;
-  if(state.phase === VERSUS){
-    if(owner === state.target && name === state.turn){
+  if (state.phase === VERSUS) {
+    if (owner === state.target && name === state.turn) {
       hideWallet = true;
     }
-    if(owner === state.turn && name === state.target){
+    if (owner === state.turn && name === state.target) {
       hideWallet = true;
     }
   }
-  if(!isPot && state.players[name].hidden){
+  if (!isPot && state.players[name].hidden) {
     hideWallet = true;
   }
-  if(hideWallet){
-    if(owner === name){
+  if (hideWallet) {
+    if (owner === name) {
       return (
         <div className="wallet wallet-hidden own-hidden">
           <CoinStack value={0} amount={v0} isPot={isPot} />
@@ -310,49 +325,53 @@ function Wallet({ name, v0, v5, v10, v25, v50, isPot }) {
       </div>
     );
   }
-  
 }
 
-function Item({ name, item , amount}) {
+function Item({ name, item, amount }) {
   const hoverText = ITEM_TO_HOVER[item];
-  if(name === "" || state.phase !== TARGETING || !canTarget(state, name, item)){
-    return <div 
-      title={hoverText}
-      className={`item-box item ${item}`}
-      >
-        <img className="item-box item-icon" src={`./icons/items/${item}.png`}/>
-        <div className={"item-box item-text"}>{amount}</div>
-      </div>;
+  if (
+    name === '' ||
+    state.phase !== TARGETING ||
+    !canTarget(state, name, item)
+  ) {
+    return (
+      <div title={hoverText} className={`item-box item ${item}`}>
+        <img className="item-box item-icon" src={`./icons/items/${item}.png`} />
+        <div className={'item-box item-text'}>{amount}</div>
+      </div>
+    );
   }
-  if(state.turn === owner){ //click event and highlight if owning player
-    return <div 
-    title={hoverText} 
-    className={`item-box item ${item} targetable`}
-    onClick={() => socket.emit('game.action.target', name, item)}
-    >
-      <img className="item-box item-icon" src={`./icons/items/${item}.png`}/>
-      <div className={"item-box item-text"}>{amount}</div>
-    </div>;
-  } else { //otherwise only highlight
-    return <div
-      title={hoverText}
-      className={`item-box item ${item} targetable`}
+  if (state.turn === owner) {
+    //click event and highlight if owning player
+    return (
+      <div
+        title={hoverText}
+        className={`item-box item ${item} targetable`}
+        onClick={() => socket.emit('game.action.target', name, item)}
       >
-        <img className="item-box item-icon" src={`./icons/items/${item}.png`}/>
-        <div className={"item-box item-text"}>{amount}</div>
-      </div>;
+        <img className="item-box item-icon" src={`./icons/items/${item}.png`} />
+        <div className={'item-box item-text'}>{amount}</div>
+      </div>
+    );
+  } else {
+    //otherwise only highlight
+    return (
+      <div title={hoverText} className={`item-box item ${item} targetable`}>
+        <img className="item-box item-icon" src={`./icons/items/${item}.png`} />
+        <div className={'item-box item-text'}>{amount}</div>
+      </div>
+    );
   }
-  
 }
 
 function Pouch({ name, items }) {
-  if(items === undefined){
-    return (<div className="pouch"/>);
+  if (items === undefined) {
+    return <div className="pouch" />;
   }
   return (
     <div className="pouch">
       {Object.entries(items).map(([item, amount], i) => (
-        <Item name = {name} item={item} amount={amount} key={i} />
+        <Item name={name} item={item} amount={amount} key={i} />
       ))}
     </div>
   );
@@ -378,7 +397,9 @@ function Seat({ inner, radius, angle, children }) {
     <div
       className="seat"
       style={{
-        transform: `rotate(${angle}rad) translate(-50%, ${radius}px) ${inner ? '' : 'translateY(-100%)'}`,
+        transform: `rotate(${angle}rad) translate(-50%, ${radius}px) ${
+          inner ? '' : 'translateY(-100%)'
+        }`,
       }}
     >
       {children}
@@ -387,18 +408,18 @@ function Seat({ inner, radius, angle, children }) {
 }
 
 const initState = {
-  turn: "",
+  turn: '',
   turnCounter: 0,
   phase: ACTION_SELECTION,
   stand: [],
-  target: "", //person who bid the most or target in Targeting phase
+  target: '', //person who bid the most or target in Targeting phase
   timer: 0,
   confirms: [],
-  players:{},
+  players: {},
   stashEmpty: false,
-}
+};
 
-const { useState, useEffect } = React;
+const { useEffect } = React;
 const socket = io();
 
 let owner = '';
@@ -407,7 +428,7 @@ let state = initState;
 
 var secretClicks = 0;
 var tableTypeIndex = 0;
-const tableTypes = ["none", "wood", "metal", "plastic"];
+const tableTypes = ['none', 'wood', 'metal', 'plastic'];
 
 function GameScreen() {
   const [, updateState] = React.useState();
@@ -437,20 +458,23 @@ function GameScreen() {
 
   return (
     <div className="room">
-      <div className="table" >
-        <img className="table-texture" src={`./icons/table/${tableTypes[tableTypeIndex]}.jpg`}></img>
+      <div className="table">
+        <img
+          className="table-texture"
+          src={`./icons/table/${tableTypes[tableTypeIndex]}.jpg`}
+        ></img>
         {lobby.map((key, i) => (
           <Seat
             radius={400}
-            angle={(2 * Math.PI) / lobby.length * (i - lobby.indexOf(owner))}
+            angle={((2 * Math.PI) / lobby.length) * (i - lobby.indexOf(owner))}
             key={i}
           >
             <Player {...players[key]} />
           </Seat>
         ))}
         <Middle players={players} />
-        <Stand stand={stand}/>
-        <Timer timer={timer}/>
+        <Stand stand={stand} />
+        <Timer timer={timer} />
       </div>
       <ButtonBox owner={owner} phase={phase} turn={turn} target={target} />
     </div>
@@ -461,10 +485,10 @@ const domContainer = document.querySelector('#root');
 const root = ReactDOM.createRoot(domContainer);
 root.render(<GameScreen />);
 
-const button = document.getElementById("secret");
+const button = document.getElementById('secret');
 button.onclick = function () {
-  secretClicks ++;
-  if(secretClicks > 30){
+  secretClicks++;
+  if (secretClicks > 30) {
     tableTypeIndex += 1;
     tableTypeIndex %= tableTypes.length;
   }

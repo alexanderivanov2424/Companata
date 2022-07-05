@@ -1,42 +1,36 @@
-
 Notes::
-
 
 backend: (need websockets)
 python - quart , flask
-nodejs - socket.io  *** start here
-
-
-
+nodejs - socket.io \*\*\* start here
 
 Server:
 full game state + logic
 on any change:
-    send full state to all clients
+send full state to all clients
 
 broadcastGameState() send gamestate json to all clients
 
 Clients:
- - send actions to server
+
+- send actions to server
 
 drawGameState()
 sendAction() send Json to server
 
-
-
 How to Run (bc I forget):
 
-1) Ngrok
-If you just have ngrok downloaded as an exe:
- - navigate to ngrok path (probably in downloads)
- - run ngrok.exe
- - run command: ngrok http 8000
-If you have ngrok in your path like a normal person:
- - run command: ngrok http 8000
+1. Ngrok
+   If you just have ngrok downloaded as an exe:
 
+- navigate to ngrok path (probably in downloads)
+- run ngrok.exe
+- run command: ngrok http 8000
+  If you have ngrok in your path like a normal person:
+- run command: ngrok http 8000
 
-2) Server
-node index.js
+2. Server
+   node index.js
 
 Graphics:
 https://cs.lmu.edu/~ray/notes/introjavascriptgraphics/
