@@ -6,6 +6,7 @@ import bodyParser from 'body-parser';
 import { Server } from 'socket.io';
 
 import {
+  DEBUG,
   ACTION_SELECTION,
   BIDDING,
   PAY_PASS,
@@ -146,6 +147,17 @@ function InitGameState(lobby) {
       },
     };
   });
+
+  console.log(DEBUG, lobby, ITEMS);
+  if(DEBUG){
+    lobby.forEach((name) => {
+      console.log(name);
+      ITEMS.forEach((item) => {
+        console.log(item);
+        state.players[name].items[item] = 1;
+      });
+    });
+  }
 }
 
 function GenerateItem() {
@@ -706,12 +718,10 @@ io.on('connection', (socket) => {
   });
 
   socket.on('game.action.get_lobby', () => {
-    console.log(lobby);
     socket.emit('game.update.lobby', lobby);
   });
 
   socket.on('game.action.get_winner', () => {
-    console.log(winner);
     socket.emit('game.update.winner', winner);
   });
 

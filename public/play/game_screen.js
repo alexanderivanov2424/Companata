@@ -1,6 +1,7 @@
 /* global React, ReactDOM, io */
 
 import {
+  DEBUG,
   ACTION_SELECTION,
   BIDDING,
   PAY_PASS,

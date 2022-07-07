@@ -1,3 +1,4 @@
+const DEBUG = false;
 const ACTION_SELECTION = 'ActionSelection';
 const BIDDING = 'Bidding';
 const PAY_PASS = 'PayPass';
@@ -41,12 +42,56 @@ const ITEM_TO_HOVER = {
   juice: "Juice",
   mold: "Mold",
   kettle: "Kettle",
-  virus: "The Rona",
+  virus: "Virus",
   leg: "Chicken Leg",
   sushi: "Sushi",
+  brick: "Brick",
+  computer: "Computer",
+  mellon: "Mellon",
+  spaghetti: "Spaphetti",
+  onigiri: "Onigiri",
+  shrimp: "Shrimp",
+  gear: "Gear",
+  light: "Light Bulb",
+  shirt: "Shirt",
+  tools: "Tool Box",
+  present: "Present",
+  tree: "Tree",
+  wreath: "Wreath",
+  turkey: "Turkey",
+  pumpkin: "Pumpkin",
+  leaf: "Leaf",
+  magnet: "Magnet",
+  ant: "Ant",
+  anthill: "Ant Hill",
+  bee: "Bee",
+  beehive: "Bee Hive",
+  soccer: "Soccer",
+  cast: "cast",
+  tooth: "tooth",
+  incognito: "Incognito",
+  hat: "Hat",
+  soup: "Soup",
+  banana: "Banana",
+  mario: "Mario",
+  minecraft: "Minecraft",
+  tetris: "Tetris",
+  sun: "Sun",
+  galaxy: "Galaxy",
+  planet: "Planet",
+  comet: "Comet",
+  satellite: "Satellite",
+  gasoline: "Gasoline",
+  house: "House",
+  strawberry: "Strawberry",
+  blueberry: "Blueberry",
+  dango: "Dango",
+  cake: "Cake",
 }
 
+// const ITEMS_ALL = [...Object.keys(ITEM_TO_HOVER)]
 const ITEMS_ALL = shuffle([...Object.keys(ITEM_TO_HOVER)]);
+
 //const ITEMS = ITEMS_ALL;
 const ITEMS = ITEMS_ALL.slice(0, 10);
 
@@ -118,6 +163,7 @@ function getBidWinner(state, lobby) {
 }
 
 export {
+  DEBUG,
   ACTION_SELECTION,
   BIDDING,
   PAY_PASS,
