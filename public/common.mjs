@@ -11,6 +11,7 @@ const STATUS_ONLINE = 'Online';
 const STACK_SIZE = 4;
 const BIDDING_TIME = 10;
 const VERSUS_HOLD_TIME = 3;
+const STACKS_TO_WIN = 4;
 
 function shuffle(array) {
   let currentIndex = array.length,
@@ -46,8 +47,23 @@ const ITEM_TO_HOVER = {
 }
 
 const ITEMS_ALL = shuffle([...Object.keys(ITEM_TO_HOVER)]);
-const ITEMS = ITEMS_ALL;
-// const ITEMS = ITEMS_ALL.slice(0, 1);
+//const ITEMS = ITEMS_ALL;
+const ITEMS = ITEMS_ALL.slice(0, 10);
+
+function GetWinner(state){
+  for (const [playerName, data] of Object.entries(state.players)) {
+    var fullStacks = 0;
+    for( const [item, count] of Object.entries(data.items) ){
+      if(count >= STACK_SIZE){
+        fullStacks ++;
+      }
+    }
+    if(fullStacks >= STACKS_TO_WIN){
+      return playerName;
+    }
+  }
+  return null;
+}
 
 function PotValue(state, playerName) {
   const pot = state.players[playerName].pot;
@@ -115,6 +131,7 @@ export {
   VERSUS_HOLD_TIME,
   ITEMS,
   ITEM_TO_HOVER,
+  GetWinner,
   PotValue,
   canTarget,
   PotEmpty,

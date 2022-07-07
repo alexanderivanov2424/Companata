@@ -14,6 +14,7 @@ import {
   VERSUS_HOLD_TIME,
   ITEMS,
   ITEM_TO_HOVER,
+  GetWinner,
   PotValue,
   canTarget,
   PotEmpty,
@@ -23,9 +24,9 @@ import {
 //TODO:
 // P1:
 // owner not being set properly (ToggleScreenButton needs this)
-// add win condition and win screen
 
 // P2:
+// restart game button
 // animations
 // auto end bid if everyone cancels
 
@@ -128,6 +129,9 @@ function ToggleScreenButton() {
 }
 
 function ButtonBox({ owner, phase, turn, target }) {
+  if(winner !== null){
+    return null;
+  }
   // horizontal box to hold buttons
   let buttons = [];
   switch (phase) {
@@ -407,6 +411,19 @@ function Seat({ inner, radius, angle, children }) {
   );
 }
 
+function Winner({ winner }){
+  if(winner === null){
+    return null;
+  }
+  return (
+    <div className="winner">
+      <p className="winner-text">
+        {winner}<br/><br/>Wins!
+      </p>
+    </div>
+  );
+}
+
 const initState = {
   turn: '',
   turnCounter: 0,
@@ -425,6 +442,7 @@ const socket = io();
 let owner = '';
 let lobby = [];
 let state = initState;
+let winner = null;
 
 var secretClicks = 0;
 var tableTypeIndex = 0;
@@ -450,8 +468,14 @@ function GameScreen() {
       lobby = newLobby;
       forceUpdate();
     });
+    socket.on('game.update.winner', (newWinner) => {
+      console.log(winner, newWinner);
+      winner = newWinner;
+      forceUpdate();
+    });
     socket.emit('game.action.get_username');
     socket.emit('game.action.get_lobby');
+    socket.emit('game.action.get_winner');
   }, []);
 
   const { turn, phase, stand, target, timer, players } = state;
@@ -476,6 +500,7 @@ function GameScreen() {
         <Stand stand={stand} />
         <Timer timer={timer} />
       </div>
+      <Winner winner={winner} />
       <ButtonBox owner={owner} phase={phase} turn={turn} target={target} />
     </div>
   );

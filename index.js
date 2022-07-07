@@ -18,6 +18,7 @@ import {
   BIDDING_TIME,
   VERSUS_HOLD_TIME,
   ITEMS,
+  GetWinner,
   PotValue,
   PotEmpty,
   getBidWinner,
@@ -100,6 +101,7 @@ var kickVote = {};
 var GAME_STARTED = false;
 
 var state = {};
+var winner = null;
 var timerEvent = null;
 
 var itemStash = [];
@@ -169,6 +171,10 @@ function ProgressTurn() {
   }
   if (itemStash.length === 0) {
     state.stashEmpty = true;
+  }
+  winner = GetWinner(state);
+  if(winner !== null){
+    EndGame();
   }
 }
 
@@ -564,25 +570,25 @@ function Event_ToggleScreen(playerName) {
 
 function InfuseFunds(level) {
   switch (level) {
-    case 1:
-      lobby.forEach((name) => {
-        GiveCoins(name, 'v0', 1);
-        GiveCoins(name, 'v5', 3);
-        GiveCoins(name, 'v10', 3);
-        GiveCoins(name, 'v25', 2);
-        GiveCoins(name, 'v50', 1);
-      });
-      break;
     case 2:
       lobby.forEach((name) => {
-        GiveCoins(name, 'v0', 1);
+        GiveCoins(name, 'v0', 0);
+        GiveCoins(name, 'v5', 3);
+        GiveCoins(name, 'v10', 3);
+        GiveCoins(name, 'v25', 2);
+        GiveCoins(name, 'v50', 0);
+      });
+      break;
+    case 4:
+      lobby.forEach((name) => {
+        GiveCoins(name, 'v0', 0);
         GiveCoins(name, 'v5', 3);
         GiveCoins(name, 'v10', 3);
         GiveCoins(name, 'v25', 2);
         GiveCoins(name, 'v50', 1);
       });
       break;
-    case 3:
+    case 6:
       lobby.forEach((name) => {
         GiveCoins(name, 'v0', 1);
         GiveCoins(name, 'v25', 4);
@@ -592,6 +598,10 @@ function InfuseFunds(level) {
     default:
     // code block
   }
+}
+
+function EndGame(){
+  io.emit('game.update.winner', winner);
 }
 
 function filterGhosts() {
@@ -698,6 +708,11 @@ io.on('connection', (socket) => {
   socket.on('game.action.get_lobby', () => {
     console.log(lobby);
     socket.emit('game.update.lobby', lobby);
+  });
+
+  socket.on('game.action.get_winner', () => {
+    console.log(winner);
+    socket.emit('game.update.winner', winner);
   });
 
   socket.on('game.action.target_phase', () => {
