@@ -130,7 +130,7 @@ function ToggleScreenButton() {
 }
 
 function ButtonBox({ owner, phase, turn, target }) {
-  if(winner !== null){
+  if (winner !== null) {
     return null;
   }
   // horizontal box to hold buttons
@@ -412,14 +412,17 @@ function Seat({ inner, radius, angle, children }) {
   );
 }
 
-function Winner({ winner }){
-  if(winner === null){
+function Winner({ winner }) {
+  if (winner === null) {
     return null;
   }
   return (
     <div className="winner">
       <p className="winner-text">
-        {winner}<br/><br/>Wins!
+        {winner}
+        <br />
+        <br />
+        Wins!
       </p>
     </div>
   );

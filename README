@@ -32,6 +32,5 @@ How to Run (bc I forget):
 2. Server
    node index.js
 
-
 Kill Ngrok sessions:
 taskkill /f /im ngrok.exe

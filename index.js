@@ -149,7 +149,7 @@ function InitGameState(lobby) {
   });
 
   console.log(DEBUG, lobby, ITEMS);
-  if(DEBUG){
+  if (DEBUG) {
     lobby.forEach((name) => {
       console.log(name);
       ITEMS.forEach((item) => {
@@ -185,7 +185,7 @@ function ProgressTurn() {
     state.stashEmpty = true;
   }
   winner = GetWinner(state);
-  if(winner !== null){
+  if (winner !== null) {
     EndGame();
   }
 }
@@ -612,7 +612,7 @@ function InfuseFunds(level) {
   }
 }
 
-function EndGame(){
+function EndGame() {
   io.emit('game.update.winner', winner);
 }
 

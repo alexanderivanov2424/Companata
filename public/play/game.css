@@ -180,8 +180,8 @@ body {
 .wallet-hidden-icon {
   width: 100%;
   height: 100%;
-  max-width:100%;
-  max-height:100%;
+  max-width: 100%;
+  max-height: 100%;
   position: relative;
   object-fit: contain;
   border-radius: 20%;
@@ -241,11 +241,11 @@ coin-stack-pot {
   border-radius: 50%;
   font-size: 14px;
   font-family: 'Monaco', monospace;
-  transition: all .2s ease-in-out;
+  transition: all 0.2s ease-in-out;
 }
 
 .coin:hover {
-  transform: rotate(180deg) scale(1.1); 
+  transform: rotate(180deg) scale(1.1);
   z-index: 2;
 }
 
@@ -277,20 +277,18 @@ coin-stack-pot {
 .item-box {
   width: var(--item-size);
   height: var(--item-size);
-  
 }
 
 .item {
   position: relative;
   border-radius: 20%;
-  transition: all .4s ease-in-out;
+  transition: all 0.4s ease-in-out;
 }
 
 .item:hover {
-  transform: scale(2); 
+  transform: scale(2);
   z-index: 2;
 }
-
 
 .item-text {
   top: 10%;
@@ -505,11 +503,15 @@ coin-stack-pot {
 }
 
 .minecraft {
-  background-image: linear-gradient(to top left, rgb(74, 105, 197), rgb(129, 160, 255));
+  background-image: linear-gradient(
+    to top left,
+    rgb(74, 105, 197),
+    rgb(129, 160, 255)
+  );
 }
 
 .tetris {
-  background-image: linear-gradient(rgb(145, 246, 145),rgb(53, 219, 32));
+  background-image: linear-gradient(rgb(145, 246, 145), rgb(53, 219, 32));
 }
 
 .sun {
@@ -613,7 +615,11 @@ coin-stack-pot {
 }
 
 .pong {
-  background-image: linear-gradient(to right, rgb(109, 212, 109),rgb(112, 112, 255));
+  background-image: linear-gradient(
+    to right,
+    rgb(109, 212, 109),
+    rgb(112, 112, 255)
+  );
 }
 
 .universe {
