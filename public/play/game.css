@@ -555,3 +555,91 @@ coin-stack-pot {
 .cake {
   background-color: rgb(228, 54, 184);
 }
+
+.cookie {
+  background-color: rgb(179, 155, 134);
+}
+
+.chocolate {
+  background-color: rgb(240, 72, 72);
+}
+
+.rot {
+  background-color: rgb(141, 156, 115);
+}
+
+.poop {
+  background-color: rgb(239, 208, 104);
+}
+
+.soap {
+  background-color: rgb(126, 218, 222);
+}
+
+.toothbrush {
+  background-color: rgb(109, 212, 218);
+}
+
+.milk {
+  background-color: rgb(251, 255, 148);
+}
+
+.butter {
+  background-color: rgb(251, 223, 121);
+}
+
+.grass {
+  background-color: rgb(182, 150, 99);
+}
+
+.plane {
+  background-color: rgb(144, 233, 255);
+}
+
+.car {
+  background-color: rgb(180, 180, 180);
+}
+
+.paper {
+  background-color: rgb(214, 148, 237);
+}
+
+.pencil {
+  background-color: rgb(242, 224, 105);
+}
+
+.blackberry {
+  background-color: rgb(173, 75, 195);
+}
+
+.pong {
+  background-image: linear-gradient(to right, rgb(109, 212, 109),rgb(112, 112, 255));
+}
+
+.universe {
+  background-color: rgb(120, 120, 120);
+}
+
+.motorcycle {
+  background-color: rgb(160, 160, 160);
+}
+
+.tornado {
+  background-color: rgb(136, 190, 193);
+}
+
+.wine {
+  background-color: rgb(239, 165, 100);
+}
+
+.cheese {
+  background-color: rgb(242, 227, 127);
+}
+
+.clouds {
+  background-color: rgb(124, 230, 226);
+}
+
+.dice {
+  background-color: rgb(209, 122, 171);
+}

@@ -1,4 +1,4 @@
-Notes::
+~ Notes ~
 
 backend: (need websockets)
 python - quart , flask
@@ -32,5 +32,6 @@ How to Run (bc I forget):
 2. Server
    node index.js
 
-Graphics:
-https://cs.lmu.edu/~ray/notes/introjavascriptgraphics/
+
+Kill Ngrok sessions:
+taskkill /f /im ngrok.exe

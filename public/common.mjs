@@ -87,6 +87,28 @@ const ITEM_TO_HOVER = {
   blueberry: "Blueberry",
   dango: "Dango",
   cake: "Cake",
+  cookie: "Cookie",
+  chocolate: "Chocolate",
+  rot: "Rot",
+  poop: "Poop",
+  soap: "Soap",
+  toothbrush: "Toothbrush",
+  milk: "Milk",
+  butter: "Butter",
+  grass: "Grass",
+  plane: "Plane",
+  car: "Car",
+  paper: "Paper",
+  pencil: "Pencil",
+  blackberry: "Blackberry",
+  pong: "Pong",
+  universe: "Universe",
+  motorcycle: "Motorcycle",
+  tornado: "Tornado",
+  wine: "Wine",
+  cheese: "Cheese",
+  clouds: "Clouds",
+  dice: "Dice",
 }
 
 // const ITEMS_ALL = [...Object.keys(ITEM_TO_HOVER)]
@@ -94,6 +116,7 @@ const ITEMS_ALL = shuffle([...Object.keys(ITEM_TO_HOVER)]);
 
 //const ITEMS = ITEMS_ALL;
 const ITEMS = ITEMS_ALL.slice(0, 10);
+//const ITEMS = ITEMS_ALL.slice(58, 80);
 
 function GetWinner(state){
   for (const [playerName, data] of Object.entries(state.players)) {
