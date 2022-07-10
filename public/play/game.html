@@ -18,16 +18,21 @@
       src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
       crossorigin
     ></script>
-    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script
-      data-plugins="transform-es2015-modules-umd"
       type="text/babel"
+      data-type="module"
       src="../common.mjs"
     ></script>
     <script
-      data-plugins="transform-es2015-modules-umd"
       type="text/babel"
+      data-type="module"
+      src="../model.mjs"
+    ></script>
+    <script
+      type="text/babel"
+      data-type="module"
       src="game_screen.js"
     ></script>
   </body>

@@ -19,11 +19,10 @@ import {
   BIDDING_TIME,
   VERSUS_HOLD_TIME,
   ITEMS,
-  GetWinner,
-  PotValue,
-  PotEmpty,
+  GetWinnerName,
   getBidWinner,
 } from './public/common.mjs';
+import { Player } from './public/model.mjs';
 
 const app = express();
 const server = createServer(app);
@@ -44,13 +43,29 @@ app.use('/play', (req, res, next) => {
   const sessionId = req.session.id;
   const username = sessionIdToUsername.get(sessionId);
 
-  req.session.username = username;
   if (username) {
+    req.session.username = username;
     next();
   } else {
     console.log(`redirecting session ${sessionId} to login page`);
     res.redirect('/');
   }
+});
+
+app.use('/play/lobby', (_req, res, next) => {
+  if (GAME_STARTED) {
+    res.redirect('/play/game');
+    return;
+  }
+  next();
+});
+
+app.use('/play/game', (_req, res, next) => {
+  if (!GAME_STARTED) {
+    res.redirect('/play/lobby');
+    return;
+  }
+  next();
 });
 
 // serve static files in /public directory
@@ -102,7 +117,6 @@ var kickVote = {};
 var GAME_STARTED = false;
 
 var state = {};
-var winner = null;
 var timerEvent = null;
 
 var itemStash = [];
@@ -114,49 +128,38 @@ for (var i = 0; i < STACK_SIZE; i++) {
 function InitGameState(lobby) {
   GAME_STARTED = true;
   state = {
-    turn: lobby[0],
     turnCounter: 0,
     phase: 'ActionSelection',
     stand: [],
-    target: '', //person who bid the most or target in Targeting phase
+    target: '', // name of the player who bid the most or target in Targeting phase
     timer: 0,
     confirms: [],
-    players: {},
+    players: Object.fromEntries(
+      lobby.map((name) => [name, new Player({ name })])
+    ),
     stashEmpty: false,
     biddingOrder: [],
+    winner: null,
+    get turn() {
+      return lobby[this.turnCounter % lobby.length];
+    },
+    get currentPlayer() {
+      return this.players[this.turn];
+    },
+    get targetPlayer() {
+      return this.players[this.target];
+    },
   };
-  lobby.forEach((name) => {
-    state.players[name] = {
-      name: name,
-      status: STATUS_OFFLINE,
-      hidden: false,
-      wallet: {
-        v0: 2,
-        v5: 4,
-        v10: 3,
-        v25: 0,
-        v50: 0,
-      },
-      items: {},
-      pot: {
-        v0: 0,
-        v5: 0,
-        v10: 0,
-        v25: 0,
-        v50: 0,
-      },
-    };
-  });
 
   console.log(DEBUG, lobby, ITEMS);
   if (DEBUG) {
-    lobby.forEach((name) => {
-      console.log(name);
-      ITEMS.forEach((item) => {
+    for (const player of state.players) {
+      console.log(player.name);
+      for (const item of ITEMS) {
         console.log(item);
-        state.players[name].items[item] = 1;
-      });
-    });
+        player.items.set(item, 1);
+      }
+    }
   }
 }
 
@@ -168,9 +171,6 @@ function GenerateItem() {
 }
 
 function ProgressTurn() {
-  var i = lobby.indexOf(state.turn);
-  i = (i + 1) % lobby.length;
-  state.turn = lobby[i];
   state.turnCounter++;
   state.phase = ACTION_SELECTION;
   state.stand = [];
@@ -184,143 +184,36 @@ function ProgressTurn() {
   if (itemStash.length === 0) {
     state.stashEmpty = true;
   }
-  winner = GetWinner(state);
-  if (winner !== null) {
-    EndGame();
-  }
+  state.winner = GetWinnerName(state);
 }
 
-function clearPot(playerName) {
-  state.players[playerName].pot = {
-    v0: 0,
-    v5: 0,
-    v10: 0,
-    v25: 0,
-    v50: 0,
-  };
-}
-
-function SendPot(fromName, toName) {
-  const fromPot = state.players[fromName].pot;
-  state.players[toName].wallet.v0 += fromPot.v0;
-  state.players[toName].wallet.v5 += fromPot.v5;
-  state.players[toName].wallet.v10 += fromPot.v10;
-  state.players[toName].wallet.v25 += fromPot.v25;
-  state.players[toName].wallet.v50 += fromPot.v50;
-  clearPot(fromName);
-}
-
-function ClaimStand(playerName) {
-  for (var i = 0; i < state.stand.length; i++) {
-    state.players[playerName].items[state.stand[i]] =
-      (state.players[playerName].items[state.stand[i]] || 0) + 1;
+function ClaimStand(player) {
+  for (const item of state.stand) {
+    player.items.add(item);
   }
   state.stand = [];
 }
 
 function SplitStand(firstPlayer, secondPlayer) {
-  if (state.stand.length != 2) {
+  if (state.stand.length !== 2) {
     console.error('Stand must be 2 items to split.');
+    return;
   }
-  if (state.stand[0] != state.stand[1]) {
+  if (state.stand[0] !== state.stand[1]) {
     console.error('Stand items must be the same to split.');
+    return;
   }
-  state.players[firstPlayer].items[state.stand[0]] =
-    (state.players[firstPlayer].items[state.stand[0]] || 0) + 1;
-  state.players[secondPlayer].items[state.stand[1]] =
-    (state.players[secondPlayer].items[state.stand[1]] || 0) + 1;
+  firstPlayer.items.add(state.stand[0]);
+  secondPlayer.items.add(state.stand[1]);
   state.stand = [];
 }
 
-function HasItem(playerName, item) {
-  if (!(item in state.players[playerName].items)) {
-    return false;
-  }
-  return state.players[playerName].items[item] > 0;
-}
-
-function CanTargetItem(playerName, item) {
-  if (
-    state.players[playerName].items[item] <= 0 ||
-    state.players[playerName].items[item] >= STACK_SIZE
-  ) {
-    return false;
-  }
-  return true;
-}
-
-function SubmitItemToStand(playerName, item) {
-  if (!HasItem(playerName, item)) {
+function SubmitItemToStand(player, item) {
+  if (!player.items.remove(item)) {
     console.error("Adding item to stand which player doesn't have");
     return;
   }
-  state.players[playerName].items[item] -= 1;
   state.stand.push(item);
-  if (state.players[playerName].items[item] === 0) {
-    delete state.players[playerName].items[item];
-  }
-}
-
-function HasCoin(playerName, coin) {
-  return state.players[playerName].wallet[coin] > 0;
-}
-
-function PayCoin(fromPlayer, toPlayer, coin) {
-  if (!HasCoin(fromPlayer, coin)) {
-    console.error("Taking coin from player which player doesn't have");
-    return;
-  }
-  state.players[fromPlayer].wallet[coin] -= 1;
-  state.players[toPlayer].wallet[coin] += 1;
-}
-
-function GiveCoin(toPlayer, coin) {
-  state.players[toPlayer].wallet[coin] += 1;
-}
-
-function GiveCoins(toPlayer, coin, number) {
-  for (var i = 0; i < number; i++) {
-    state.players[toPlayer].wallet[coin] += 1;
-  }
-}
-
-function playerMoney(playerName) {
-  const wallet = state.players[playerName].wallet;
-  return wallet.v5 * 5 + wallet.v10 * 10 + wallet.v25 * 25 + wallet.v50 * 50;
-}
-
-function Pay(fromPlayer, toPlayer, amount) {
-  if (playerMoney(fromPlayer) < amount) {
-    console.error('Player paying more money than they have');
-    return;
-  }
-  const values = [50, 25, 10, 5];
-  const valueNames = ['v50', 'v25', 'v10', 'v5'];
-
-  for (let i = 0; i < values.length; i++) {
-    while (amount >= values[i] && HasCoin(fromPlayer, valueNames[i])) {
-      amount -= values[i];
-      PayCoin(fromPlayer, toPlayer, valueNames[i]);
-    }
-  }
-  if (amount < 0) {
-    console.error('Alex you dumbass go fix the Pay code');
-    return;
-  }
-  if (amount > 0) {
-    for (let i = values.length - 1; i >= 0; i--) {
-      if (HasCoin(fromPlayer, valueNames[i])) {
-        amount -= values[i];
-        PayCoin(fromPlayer, toPlayer, valueNames[i]);
-        break; //paying smallest coin available should be enough
-      }
-    }
-    if (amount > 0) {
-      console.error(
-        'Alex you dumbass go fix the Pay code, trying to be clever smh'
-      );
-    }
-  }
 }
 
 function Event_StartBiddingPhase() {
@@ -343,37 +236,36 @@ function UpdateTimer() {
   state.timer--;
 }
 
-function Event_MakeBid(playerName, value) {
+function Event_MakeBid(thisPlayer, coin) {
   if (state.phase !== BIDDING && state.phase !== VERSUS) {
     console.warn('Attempt to bid while not in bidding or versus phase');
     return;
   }
-  if (state.phase === BIDDING && playerName === state.turn) {
+  if (state.phase === BIDDING && thisPlayer === state.currentPlayer) {
     console.warn('turn player cannot bid in bidding phase');
     return;
   }
   if (
     state.phase === VERSUS &&
-    playerName !== state.turn &&
-    playerName !== state.target
+    thisPlayer !== state.currentPlayer &&
+    thisPlayer !== state.targetPlayer
   ) {
     console.warn(
       'non target player, non owner player cannot bid in versus phase'
     );
     return;
   }
-  if (state.confirms.includes(playerName)) {
+  if (state.confirms.includes(thisPlayer)) {
     console.warn('player that canceled bid cannot bid again');
     return;
   }
-  if (state.players[playerName].wallet[value] > 0) {
-    state.players[playerName].wallet[value]--;
-    state.players[playerName].pot[value]++;
+  if (thisPlayer.wallet.remove(coin)) {
+    thisPlayer.pot.add(coin);
     //remove player from bid list and then add them at the end
-    state.biddingOrder = state.biddingOrder.filter((name) => {
-      return name !== playerName;
+    state.biddingOrder = state.biddingOrder.filter((player) => {
+      return player !== thisPlayer;
     });
-    state.biddingOrder.push(playerName);
+    state.biddingOrder.push(thisPlayer);
   }
 }
 
@@ -385,18 +277,18 @@ function BiddingTimeout() {
   }
   clearTimeout(timerEvent);
   state.timer = 0;
-  const highestBidder = getBidWinner(state, lobby);
-  if (highestBidder === state.turn) {
-    ClaimStand(state.turn);
+  const highestBidder = getBidWinner(state);
+  if (highestBidder === state.currentPlayer) {
+    ClaimStand(state.currentPlayer);
     ProgressTurn();
     return;
   }
-  state.target = highestBidder;
-  lobby.forEach((playerName) => {
-    if (playerName !== state.target) {
-      SendPot(playerName, playerName);
+  state.target = highestBidder.name;
+  for (const player of state.players) {
+    if (player !== state.targetPlayer) {
+      player.sendPot(player);
     }
-  });
+  }
   state.phase = PAY_PASS;
 }
 
@@ -405,33 +297,11 @@ function Event_StartTargetingPhase() {
     console.warn('Attempt to start targeting while not in action select phase');
     return;
   }
-  var canTarget = false;
-  for (const [ownItem, ownItemNumber] of Object.entries(
-    state.players[state.turn].items
-  )) {
-    if (ownItemNumber <= 0 || ownItemNumber >= STACK_SIZE) {
-      continue;
-    }
-    lobby.forEach((otherPlayerName) => {
-      if (otherPlayerName === state.turn) {
-        return;
-      }
-      for (const [otherItem, otherItemNumber] of Object.entries(
-        state.players[otherPlayerName].items
-      )) {
-        if (otherItemNumber <= 0 || otherItemNumber >= STACK_SIZE) {
-          continue;
-        }
-        if (otherItem === ownItem) {
-          canTarget = true;
-          return;
-        }
-      }
-    });
-    if (canTarget) {
-      break;
-    }
-  }
+  const canTarget = [...state.currentPlayer.items.keys()].some((item) =>
+    [...state.players].some((player) =>
+      state.currentPlayer.canTarget(player, item)
+    )
+  );
   if (!canTarget) {
     console.warn(
       'Attempt to start targeting when no available items for targeting'
@@ -446,50 +316,39 @@ function Event_Target(targetPlayerName, item) {
     console.warn('Attempt to start target item while not in targeting phase');
     return;
   }
-  if (!HasItem(targetPlayerName, item)) {
-    console.warn("targeting item that target player doesn't have");
-    return;
-  }
-  if (!CanTargetItem(targetPlayerName, item)) {
+  const targetPlayer = state.players[targetPlayerName];
+  if (!state.currentPlayer.canTarget(targetPlayer, item)) {
     console.warn("targeting item that can't be targeted");
     return;
   }
-  if (!HasItem(state.turn, item)) {
-    console.warn("targeting item that owner player doesn't have");
-    return;
-  }
-  if (!CanTargetItem(state.turn, item)) {
-    console.warn("targeting item that can't be targeted");
-    return;
-  }
-  SubmitItemToStand(targetPlayerName, item);
-  SubmitItemToStand(state.turn, item);
+  SubmitItemToStand(targetPlayer, item);
+  SubmitItemToStand(state.currentPlayer, item);
   state.phase = VERSUS;
   state.target = targetPlayerName;
 }
 
-function Event_ConfirmBidVersus(playerName) {
+function Event_ConfirmBidVersus(player) {
   //who is confirming
   if (state.phase !== VERSUS) {
     console.warn('Attempt to confirm bid while not in versus phase');
     return;
   }
-  if (playerName !== state.turn && playerName !== state.target) {
+  if (player !== state.currentPlayer && player !== state.targetPlayer) {
     console.warn('Player not in versus tried to confirm bid');
     return;
   }
-  if (state.confirms.includes(playerName)) {
+  if (state.confirms.includes(player)) {
     console.warn('confirming player already confirmed');
     return;
   }
-  if (PotEmpty(state, playerName)) {
+  if (player.pot.isEmpty()) {
     console.warn('cannot submit without bidding');
     return;
   }
-  state.confirms.push(playerName);
+  state.confirms.push(player);
   if (
-    state.confirms.includes(state.turn) &&
-    state.confirms.includes(state.target)
+    state.confirms.includes(state.currentPlayer) &&
+    state.confirms.includes(state.targetPlayer)
   ) {
     state.phase = VERSUS_HOLD;
     setTimeout(VersusHoldTimeout, VERSUS_HOLD_TIME * 1000);
@@ -499,127 +358,116 @@ function Event_ConfirmBidVersus(playerName) {
 function VersusHoldTimeout() {
   state.confirms = [];
 
-  const targetPlayerPot = PotValue(state, state.target);
-  const turnPlayerPot = PotValue(state, state.turn);
+  const targetPlayerPot = state.targetPlayer.potValue();
+  const turnPlayerPot = state.currentPlayer.potValue();
   if (targetPlayerPot > turnPlayerPot) {
-    ClaimStand(state.target);
+    ClaimStand(state.targetPlayer);
   } else if (targetPlayerPot < turnPlayerPot) {
-    ClaimStand(state.turn);
+    ClaimStand(state.currentPlayer);
   } else {
-    SplitStand(state.target, state.turn);
+    SplitStand(state.targetPlayer, state.currentPlayer);
   }
-  SendPot(state.target, state.turn);
-  SendPot(state.turn, state.target);
+  state.targetPlayer.sendPot(state.currentPlayer);
+  state.currentPlayer.sendPot(state.targetPlayer);
   ProgressTurn();
 }
 
-function Event_ChoosePass(playerName) {
+function Event_ChoosePass(thisPlayer) {
   //owner player passes on new item
   if (state.phase !== PAY_PASS) {
     console.warn('Attempt to pass while not in paypass phase');
     return;
   }
-  if (state.turn != playerName) {
+  if (thisPlayer !== state.currentPlayer) {
     console.warn('Player passing on bid while it is not their turn');
     return;
   }
-  SendPot(state.target, state.turn);
-  ClaimStand(state.target);
+  state.targetPlayer.sendPot(state.currentPlayer);
+  ClaimStand(state.targetPlayer);
   ProgressTurn();
 }
 
-function Event_ChoosePay(playerName) {
+function Event_ChoosePay(thisPlayer) {
   //owner player pays for new item
   if (state.phase !== PAY_PASS) {
     console.warn('Attempt to pay while not in paypass phase');
     return;
   }
-  if (state.turn != playerName) {
+  if (state.currentPlayer !== thisPlayer) {
     console.warn('Player paying on bid while it is not their turn');
     return;
   }
-  if (PotValue(state, state.target) > playerMoney(state.turn)) {
+  if (state.targetPlayer.potValue() > state.currentPlayer.money()) {
     console.warn("Player doesn't have enough money to pay");
     return;
   }
-  Pay(state.turn, state.target, PotValue(state, state.target));
-  SendPot(state.target, state.target);
-  ClaimStand(state.turn);
+  state.currentPlayer.pay(state.targetPlayer, state.targetPlayer.potValue());
+  state.targetPlayer.sendPot(state.targetPlayer);
+  ClaimStand(state.currentPlayer);
   ProgressTurn();
 }
 
-function Event_CancelBid(playerName) {
+function Event_CancelBid(thisPlayer) {
   //remove bid from pot in bidding phase
   if (state.phase !== BIDDING) {
     console.warn('Attempt to cancel bid while not in bidding phase');
     return;
   }
-  if (state.confirms.includes(playerName)) {
+  if (state.confirms.includes(thisPlayer)) {
     console.warn('Player already canceled bid');
     return;
   }
-  state.confirms.push(playerName);
-  SendPot(playerName, playerName);
+  state.confirms.push(thisPlayer);
+  thisPlayer.sendPot(thisPlayer);
 }
 
-function Event_CancelBidVersus(playerName) {
+function Event_CancelBidVersus(thisPlayer) {
   //remove bid from pot in versus phase
   if (state.phase !== VERSUS) {
     console.warn('Attempt to cancel bid while not in versus phase');
     return;
   }
-  if (state.confirms.includes(playerName)) {
+  if (state.confirms.includes(thisPlayer)) {
     console.warn('Player cannot cancel bid after amount confirmed');
     return;
   }
-  SendPot(playerName, playerName);
+  thisPlayer.sendPot(thisPlayer);
 }
 
-function Event_ToggleScreen(playerName) {
-  console.log(playerName);
-  state.players[playerName].hidden = !state.players[playerName].hidden;
+function Event_ToggleScreen(thisPlayer) {
+  thisPlayer.hidden = !thisPlayer.hidden;
 }
 
 function InfuseFunds(level) {
   switch (level) {
     case 2:
-      lobby.forEach((name) => {
-        GiveCoins(name, 'v0', 0);
-        GiveCoins(name, 'v5', 3);
-        GiveCoins(name, 'v10', 3);
-        GiveCoins(name, 'v25', 2);
-        GiveCoins(name, 'v50', 0);
-      });
+      for (const player of state.players) {
+        player.wallet.add(5, 3).add(10, 3).add(25, 2);
+      }
       break;
     case 4:
-      lobby.forEach((name) => {
-        GiveCoins(name, 'v0', 0);
-        GiveCoins(name, 'v5', 3);
-        GiveCoins(name, 'v10', 3);
-        GiveCoins(name, 'v25', 2);
-        GiveCoins(name, 'v50', 1);
-      });
+      for (const player of state.players) {
+        player.wallet.add(5, 3).add(10, 3).add(25, 2).add(50, 1);
+      }
       break;
     case 6:
-      lobby.forEach((name) => {
-        GiveCoins(name, 'v0', 1);
-        GiveCoins(name, 'v25', 4);
-        GiveCoins(name, 'v50', 2);
-      });
+      for (const player of state.players) {
+        player.wallet.add(0, 1).add(25, 4).add(50, 2);
+      }
       break;
     default:
     // code block
   }
 }
 
-function EndGame() {
-  io.emit('game.update.winner', winner);
-}
-
+// TODO: remove if current method of filtering is working
 function filterGhosts() {
-  lobby = lobby.filter(function (name) {
-    return name !== undefined && name !== null;
-  });
+  console.log(state);
+  if (state.players) {
+    state.players = state.players.filter(
+      (player) => player.name !== undefined && player.name !== null
+    );
+  }
 }
 
 // -------------- Socket.IO Events ----------------
@@ -628,52 +476,13 @@ const io = new Server(server);
 
 io.use((socket, next) => sessionMiddleware(socket.request, {}, next));
 
-io.on('connection', (socket) => {
-  const req = socket.request;
-  const sessionId = req.session.id;
-  const username = sessionIdToUsername.get(sessionId);
-
-  console.log(`${username} connected`);
+function lobbyOnConnect(socket, username) {
   if (!lobby.includes(username)) {
-    filterGhosts();
-    if (!GAME_STARTED) {
-      lobby.push(username);
-      io.emit('lobby.update.lobby_list', lobby);
-    } else {
-      console.warn(
-        `${username} could not join game because it already started`
-      );
-    }
+    lobby.push(username);
+    io.emit('lobby.update.lobby_list', lobby);
   }
-
-  if (GAME_STARTED && username in state.players) {
-    state.players[username].status = STATUS_ONLINE;
-  }
-
-  socket.on('disconnect', () => {
-    console.log(`${username} disconnected`);
-    if (GAME_STARTED && username in state.players) {
-      state.players[username].status = STATUS_OFFLINE;
-    }
-  });
 
   socket.emit('lobby.update.client_username', username);
-
-  socket.join(sessionId);
-
-  socket.use((_, next) => {
-    req.session.reload((err) => {
-      if (err) {
-        socket.disconnect();
-      } else {
-        next();
-      }
-    });
-  });
-
-  socket.onAny((event, ...args) => {
-    console.log(event, args);
-  });
 
   socket.on('lobby.join', () => {
     if (!lobby.includes(username)) {
@@ -700,8 +509,13 @@ io.on('connection', (socket) => {
     }
   });
 
-  function sendGameState() {
-    io.emit('game.update.state', state);
+  async function sendGameState() {
+    for (const socket of await io.fetchSockets()) {
+      socket.emit(
+        'game.update.state',
+        JSON.stringify({ owner: socket.username, lobby, state })
+      );
+    }
   }
 
   socket.on('lobby.start_game', () => {
@@ -712,17 +526,19 @@ io.on('connection', (socket) => {
       setInterval(sendGameState, 100);
     }
   });
+}
 
-  socket.on('game.action.get_username', () => {
-    socket.emit('game.update.username', username);
-  });
+function gameOnConnect(socket, username) {
+  if (!lobby.includes(username)) {
+    console.warn(`${username} could not join game because it already started`);
+    return;
+  }
 
-  socket.on('game.action.get_lobby', () => {
-    socket.emit('game.update.lobby', lobby);
-  });
+  const thisPlayer = state.players[username];
 
-  socket.on('game.action.get_winner', () => {
-    socket.emit('game.update.winner', winner);
+  thisPlayer.status = STATUS_ONLINE;
+  socket.on('disconnect', () => {
+    thisPlayer.status = STATUS_OFFLINE;
   });
 
   socket.on('game.action.target_phase', () => {
@@ -733,37 +549,76 @@ io.on('connection', (socket) => {
     Event_StartBiddingPhase();
   });
 
-  socket.on('game.action.bid', (playerName, value) => {
-    Event_MakeBid(playerName, `v${value}`);
+  socket.on('game.action.bid', (value) => {
+    Event_MakeBid(thisPlayer, value);
   });
 
   socket.on('game.action.target', (targetPlayerName, item) => {
     Event_Target(targetPlayerName, item);
   });
 
-  socket.on('game.action.confirm_bid_versus', (playerName) => {
-    Event_ConfirmBidVersus(playerName);
+  socket.on('game.action.confirm_bid_versus', () => {
+    Event_ConfirmBidVersus(thisPlayer);
   });
 
-  socket.on('game.action.choose_pay', (playerName) => {
-    Event_ChoosePay(playerName);
+  socket.on('game.action.choose_pay', () => {
+    Event_ChoosePay(thisPlayer);
   });
 
-  socket.on('game.action.choose_pass', (playerName) => {
-    Event_ChoosePass(playerName);
+  socket.on('game.action.choose_pass', () => {
+    Event_ChoosePass(thisPlayer);
   });
 
-  socket.on('game.action.cancel_bid', (playerName) => {
+  socket.on('game.action.cancel_bid', () => {
     if (state.phase === BIDDING) {
-      Event_CancelBid(playerName);
+      Event_CancelBid(thisPlayer);
     } else if (state.phase === VERSUS) {
-      Event_CancelBidVersus(playerName);
+      Event_CancelBidVersus(thisPlayer);
     }
   });
 
-  socket.on('game.action.toggle_screen', (playerName) => {
-    Event_ToggleScreen(playerName);
+  socket.on('game.action.toggle_screen', () => {
+    Event_ToggleScreen(thisPlayer);
   });
+}
+
+io.on('connection', (socket) => {
+  const req = socket.request;
+  const sessionId = req.session.id;
+  const username = sessionIdToUsername.get(sessionId);
+
+  // filter ghosts
+  if (!username) {
+    return;
+  }
+  socket.username = username;
+
+  console.log(`${username} connected`);
+  socket.on('disconnect', () => {
+    console.log(`${username} disconnected`);
+  });
+
+  socket.join(sessionId);
+
+  socket.use((_, next) => {
+    req.session.reload((err) => {
+      if (err) {
+        socket.disconnect();
+      } else {
+        next();
+      }
+    });
+  });
+
+  socket.onAny((event, ...args) => {
+    console.log(event, username + ':', args);
+  });
+
+  if (!GAME_STARTED) {
+    lobbyOnConnect(socket, username);
+  } else {
+    gameOnConnect(socket, username);
+  }
 });
 
 server.listen(8000, () => {

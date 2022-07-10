@@ -1,26 +1,16 @@
 /* global React, ReactDOM, io */
 
 import {
-  DEBUG,
   ACTION_SELECTION,
   BIDDING,
   PAY_PASS,
   TARGETING,
   VERSUS,
-  VERSUS_HOLD,
   STATUS_OFFLINE,
-  STATUS_ONLINE,
-  STACK_SIZE,
-  BIDDING_TIME,
-  VERSUS_HOLD_TIME,
-  ITEMS,
   ITEM_TO_HOVER,
-  GetWinner,
-  PotValue,
-  canTarget,
-  PotEmpty,
   getBidWinner,
-} from './common.mjs';
+} from '../common.mjs';
+import { Player as MPlayer, Bag } from '../model.mjs';
 
 //TODO:
 // P1:
@@ -61,7 +51,7 @@ function SubmitBidButton() {
   return (
     <button
       className="button button-submit"
-      onClick={() => socket.emit('game.action.confirm_bid_versus', owner)}
+      onClick={() => socket.emit('game.action.confirm_bid_versus')}
     >
       Submit
     </button>
@@ -85,7 +75,7 @@ function PayButton() {
   return (
     <button
       className="button button-pay"
-      onClick={() => socket.emit('game.action.choose_pay', owner)}
+      onClick={() => socket.emit('game.action.choose_pay')}
     >
       Pay
     </button>
@@ -97,7 +87,7 @@ function PassButton() {
   return (
     <button
       className="button button-pass"
-      onClick={() => socket.emit('game.action.choose_pass', owner)}
+      onClick={() => socket.emit('game.action.choose_pass')}
     >
       Pass
     </button>
@@ -109,7 +99,7 @@ function CancelBid() {
   return (
     <button
       className="button button-cancel"
-      onClick={() => socket.emit('game.action.cancel_bid', owner)}
+      onClick={() => socket.emit('game.action.cancel_bid')}
     >
       Cancel
     </button>
@@ -122,17 +112,14 @@ function ToggleScreenButton() {
       className={`button button-screen ${
         false && state.players[owner].hidden ? 'button-toggle' : ''
       }`}
-      onClick={() => socket.emit('game.action.toggle_screen', owner)}
+      onClick={() => socket.emit('game.action.toggle_screen')}
     >
       Screen
     </button>
   );
 }
 
-function ButtonBox({ owner, phase, turn, target }) {
-  if (winner !== null) {
-    return null;
-  }
+function ButtonBox({ phase, turn, target }) {
   // horizontal box to hold buttons
   let buttons = [];
   switch (phase) {
@@ -145,7 +132,10 @@ function ButtonBox({ owner, phase, turn, target }) {
       }
       break;
     case BIDDING:
-      if (!state.confirms.includes(owner) && !PotEmpty(state, owner)) {
+      if (
+        !state.confirms.includes(owner) &&
+        !state.players[owner].pot.isEmpty()
+      ) {
         buttons = [<CancelBid key="CancelBid" />];
       }
       break;
@@ -161,7 +151,7 @@ function ButtonBox({ owner, phase, turn, target }) {
       break;
     case VERSUS:
       if (owner === turn || owner === target) {
-        if (!PotEmpty(state, owner)) {
+        if (!state.players[owner].pot.isEmpty()) {
           buttons = [<SubmitBidButton key="SubmitBidButton" />];
         }
         buttons.push(<CancelBid key="CancelBid" />);
@@ -171,7 +161,7 @@ function ButtonBox({ owner, phase, turn, target }) {
       console.error(`unrecognized phase ${phase}`);
       break;
   }
-  buttons.push(<ToggleScreenButton owner={owner} key="ToggleScreenButton" />);
+  buttons.push(<ToggleScreenButton key="ToggleScreenButton" />);
   return <div className="button-box">{buttons}</div>;
 }
 
@@ -188,9 +178,6 @@ function Stand({ stand }) {
 
 function Middle({ players }) {
   // the middle of the table
-  if (Object.keys(players).length != lobby.length) {
-    return <div className="middle" />;
-  }
   return (
     <div className="middle">
       {lobby.map((name, i) => (
@@ -200,7 +187,7 @@ function Middle({ players }) {
           angle={((2 * Math.PI) / lobby.length) * (i - lobby.indexOf(owner))}
           key={i}
         >
-          <Wallet name={name} {...players[name].pot} isPot />
+          <Wallet name={name} wallet={players[name].pot} isPot />
         </Seat>
       ))}
     </div>
@@ -208,9 +195,6 @@ function Middle({ players }) {
 }
 
 function Timer({ timer }) {
-  if (state.phase !== BIDDING) {
-    return null;
-  }
   return <p className="timer">{timer}</p>;
 }
 
@@ -224,12 +208,9 @@ function Role({ roleType }) {
   );
 }
 
-function StatusBox({ name }) {
-  if (Object.keys(state.players).length != lobby.length) {
-    return null;
-  }
+function StatusBox({ name, status }) {
   var statusList = [];
-  if (state.players[name].status === STATUS_OFFLINE) {
+  if (status === STATUS_OFFLINE) {
     statusList.push(<Role roleType="offline" key="offline" />);
   }
   if (state.turn === name) {
@@ -249,7 +230,7 @@ function StatusBox({ name }) {
   }
   if (
     (state.phase === BIDDING || state.phase === PAY_PASS) &&
-    name === getBidWinner(state, lobby)
+    name === getBidWinner(state).name
   ) {
     statusList.push(<Role roleType="highest-bidder" key="highest-bidder" />);
   }
@@ -264,7 +245,7 @@ function Coin({ value }) {
   return (
     <div
       className={`coin coin-${value}`}
-      onClick={() => socket.emit('game.action.bid', owner, value)}
+      onClick={() => socket.emit('game.action.bid', value)}
     >
       {value}
     </div>
@@ -272,7 +253,6 @@ function Coin({ value }) {
 }
 
 function CoinStack({ value, amount, isPot }) {
-  // TODO: need to overlap coins to fit
   const coinSize = 20;
   const maxStackSize = 80;
   const shift =
@@ -288,7 +268,7 @@ function CoinStack({ value, amount, isPot }) {
   );
 }
 
-function Wallet({ name, v0, v5, v10, v25, v50, isPot }) {
+function Wallet({ name, wallet, hidden, isPot }) {
   var hideWallet = false;
   if (state.phase === VERSUS) {
     if (owner === state.target && name === state.turn) {
@@ -298,18 +278,18 @@ function Wallet({ name, v0, v5, v10, v25, v50, isPot }) {
       hideWallet = true;
     }
   }
-  if (!isPot && state.players[name].hidden) {
+  if (!isPot && hidden) {
     hideWallet = true;
   }
   if (hideWallet) {
     if (owner === name) {
       return (
         <div className="wallet wallet-hidden own-hidden">
-          <CoinStack value={0} amount={v0} isPot={isPot} />
-          <CoinStack value={5} amount={v5} isPot={isPot} />
-          <CoinStack value={10} amount={v10} isPot={isPot} />
-          <CoinStack value={25} amount={v25} isPot={isPot} />
-          <CoinStack value={50} amount={v50} isPot={isPot} />
+          <CoinStack value={0} amount={wallet.get(0)} isPot={isPot} />
+          <CoinStack value={5} amount={wallet.get(5)} isPot={isPot} />
+          <CoinStack value={10} amount={wallet.get(10)} isPot={isPot} />
+          <CoinStack value={25} amount={wallet.get(25)} isPot={isPot} />
+          <CoinStack value={50} amount={wallet.get(50)} isPot={isPot} />
         </div>
       );
     } else {
@@ -322,11 +302,11 @@ function Wallet({ name, v0, v5, v10, v25, v50, isPot }) {
   } else {
     return (
       <div className="wallet">
-        <CoinStack value={0} amount={v0} isPot={isPot} />
-        <CoinStack value={5} amount={v5} isPot={isPot} />
-        <CoinStack value={10} amount={v10} isPot={isPot} />
-        <CoinStack value={25} amount={v25} isPot={isPot} />
-        <CoinStack value={50} amount={v50} isPot={isPot} />
+        <CoinStack value={0} amount={wallet.get(0)} isPot={isPot} />
+        <CoinStack value={5} amount={wallet.get(5)} isPot={isPot} />
+        <CoinStack value={10} amount={wallet.get(10)} isPot={isPot} />
+        <CoinStack value={25} amount={wallet.get(25)} isPot={isPot} />
+        <CoinStack value={50} amount={wallet.get(50)} isPot={isPot} />
       </div>
     );
   }
@@ -335,9 +315,9 @@ function Wallet({ name, v0, v5, v10, v25, v50, isPot }) {
 function Item({ name, item, amount }) {
   const hoverText = ITEM_TO_HOVER[item];
   if (
-    name === '' ||
+    name === '' || // TODO: always true
     state.phase !== TARGETING ||
-    !canTarget(state, name, item)
+    !state.players[state.turn].canTarget(state.players[name], item)
   ) {
     return (
       <div title={hoverText} className={`item-box item ${item}`}>
@@ -375,7 +355,7 @@ function Pouch({ name, items }) {
   }
   return (
     <div className="pouch">
-      {Object.entries(items).map(([item, amount], i) => (
+      {[...items.entries()].map(([item, amount], i) => (
         <Item name={name} item={item} amount={amount} key={i} />
       ))}
     </div>
@@ -386,11 +366,11 @@ function PlayerName({ name }) {
   return <span className="player-name">{name}</span>;
 }
 
-function Player({ name, wallet, items }) {
+function Player({ name, status, hidden, wallet, items }) {
   return (
     <div className="player">
-      <StatusBox name={name} />
-      <Wallet name={name} {...wallet} />
+      <StatusBox name={name} status={status} />
+      <Wallet name={name} wallet={wallet} hidden={hidden} />
       <PlayerName name={name} />
       <Pouch name={name} items={items} />
     </div>
@@ -413,9 +393,6 @@ function Seat({ inner, radius, angle, children }) {
 }
 
 function Winner({ winner }) {
-  if (winner === null) {
-    return null;
-  }
   return (
     <div className="winner">
       <p className="winner-text">
@@ -428,7 +405,14 @@ function Winner({ winner }) {
   );
 }
 
-const initState = {
+// changes between logins
+var owner = '';
+
+// changes between games
+var lobby = [];
+
+// changes between events
+var state = {
   turn: '',
   turnCounter: 0,
   phase: ACTION_SELECTION,
@@ -443,11 +427,6 @@ const initState = {
 const { useEffect } = React;
 const socket = io();
 
-let owner = '';
-let lobby = [];
-let state = initState;
-let winner = null;
-
 var secretClicks = 0;
 var tableTypeIndex = 0;
 const tableTypes = ['none', 'wood', 'metal', 'plastic'];
@@ -457,32 +436,29 @@ function GameScreen() {
   const forceUpdate = React.useCallback(() => updateState({}), []);
 
   useEffect(() => {
-    socket.on('game.update.state', (newState) => {
-      //console.log('got state', newState);
-      state = newState;
+    // TODO: top level await before rendering?
+    socket.on('game.update.state', (data) => {
+      ({ owner, lobby, state } = JSON.parse(data, (key, value) => {
+        switch (key) {
+          case 'players':
+            for (const name in value) {
+              value[name] = new MPlayer(value[name]);
+            }
+            return value;
+          case 'wallet':
+          case 'items':
+          case 'pot':
+            return new Bag(value);
+          default:
+            return value;
+        }
+      }));
+      // console.log('got state', state);
       forceUpdate();
     });
-    socket.on('game.update.username', (username) => {
-      //console.log('got username', username);
-      owner = username;
-      forceUpdate();
-    });
-    socket.on('game.update.lobby', (newLobby) => {
-      //console.log('got lobby', newLobby);
-      lobby = newLobby;
-      forceUpdate();
-    });
-    socket.on('game.update.winner', (newWinner) => {
-      console.log(winner, newWinner);
-      winner = newWinner;
-      forceUpdate();
-    });
-    socket.emit('game.action.get_username');
-    socket.emit('game.action.get_lobby');
-    socket.emit('game.action.get_winner');
   }, []);
 
-  const { turn, phase, stand, target, timer, players } = state;
+  const { turn, phase, stand, target, timer, players, winner } = state;
 
   return (
     <div className="room">
@@ -502,10 +478,13 @@ function GameScreen() {
         ))}
         <Middle players={players} />
         <Stand stand={stand} />
-        <Timer timer={timer} />
+        {state.phase === BIDDING && <Timer timer={timer} />}
       </div>
-      <Winner winner={winner} />
-      <ButtonBox owner={owner} phase={phase} turn={turn} target={target} />
+      {winner ? (
+        <Winner winner={winner} />
+      ) : (
+        <ButtonBox phase={phase} turn={turn} target={target} />
+      )}
     </div>
   );
 }

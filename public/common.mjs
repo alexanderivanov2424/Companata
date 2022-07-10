@@ -1,18 +1,22 @@
-const DEBUG = false;
-const ACTION_SELECTION = 'ActionSelection';
-const BIDDING = 'Bidding';
-const PAY_PASS = 'PayPass';
-const TARGETING = 'Targeting';
-const VERSUS = 'Versus';
-const VERSUS_HOLD = 'VersusHold';
+export const DEBUG = false;
+export const ACTION_SELECTION = 'ActionSelection';
+export const BIDDING = 'Bidding';
+export const PAY_PASS = 'PayPass';
+export const TARGETING = 'Targeting';
+export const VERSUS = 'Versus';
+export const VERSUS_HOLD = 'VersusHold';
 
-const STATUS_OFFLINE = 'Offline';
-const STATUS_ONLINE = 'Online';
+export const STATUS_OFFLINE = 'Offline';
+export const STATUS_ONLINE = 'Online';
 
-const STACK_SIZE = 4;
-const BIDDING_TIME = 10;
-const VERSUS_HOLD_TIME = 3;
-const STACKS_TO_WIN = 4;
+export const STACK_SIZE = 4;
+export const BIDDING_TIME = 10;
+export const VERSUS_HOLD_TIME = 3;
+export const STACKS_TO_WIN = 4;
+
+Object.prototype[Symbol.iterator] = function* () {
+  yield* Object.values(this);
+};
 
 function shuffle(array) {
   let currentIndex = array.length,
@@ -28,7 +32,7 @@ function shuffle(array) {
   return array;
 }
 
-const ITEM_TO_HOVER = {
+export const ITEM_TO_HOVER = {
   ice: 'Ice',
   rock: 'Rock',
   bread: 'Bread',
@@ -111,98 +115,36 @@ const ITEM_TO_HOVER = {
   dice: 'Dice',
 };
 
-// const ITEMS_ALL = [...Object.keys(ITEM_TO_HOVER)]
-const ITEMS_ALL = shuffle([...Object.keys(ITEM_TO_HOVER)]);
+export const ITEMS_ALL = shuffle([...Object.keys(ITEM_TO_HOVER)]);
 
-//const ITEMS = ITEMS_ALL;
-const ITEMS = ITEMS_ALL.slice(0, 10);
-//const ITEMS = ITEMS_ALL.slice(58, 80);
+export const ITEMS = ITEMS_ALL.slice(0, 10);
 
-function GetWinner(state) {
-  for (const [playerName, data] of Object.entries(state.players)) {
-    var fullStacks = 0;
-    for (const [item, count] of Object.entries(data.items)) {
-      if (count >= STACK_SIZE) {
-        fullStacks++;
-      }
-    }
-    if (fullStacks >= STACKS_TO_WIN) {
-      return playerName;
-    }
-  }
-  return null;
+export function GetWinnerName(state) {
+  return (
+    Object.values(state.players).find((player) => player.isWinner())?.name ??
+    null
+  );
 }
 
-function PotValue(state, playerName) {
-  const pot = state.players[playerName].pot;
-  return pot.v5 * 5 + pot.v10 * 10 + pot.v25 * 25 + pot.v50 * 50;
-}
-
-function PotEmpty(state, playerName) {
-  const pot = state.players[playerName].pot;
-  return pot.v0 + pot.v5 + pot.v10 + pot.v25 + pot.v50 === 0;
-}
-
-function canTarget(state, name, item) {
-  if (
-    item in state.players[state.turn].items &&
-    state.players[state.turn].items[item] > 0 &&
-    state.players[state.turn].items[item] < STACK_SIZE
-  ) {
-    if (
-      item in state.players[name].items &&
-      state.players[name].items[item] > 0 &&
-      state.players[name].items[item] < STACK_SIZE
-    ) {
-      if (name !== state.turn) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-function getBidWinner(state, lobby) {
+export function getBidWinner(state) {
   var highestBid = -1;
-  var highestBidder = state.turn;
-  lobby.forEach((playerName) => {
-    if (state.confirms.includes(playerName)) {
-      return;
+  var highestBidder = state.currentPlayer;
+  for (const player of state.players) {
+    if (state.confirms.includes(player)) {
+      continue;
     }
-    const potValue = PotValue(state, playerName);
-    if (!PotEmpty(state, playerName)) {
+    const potValue = player.potValue();
+    if (!player.pot.isEmpty()) {
       if (
         potValue > highestBid ||
         (potValue === highestBid &&
-          state.biddingOrder.indexOf(playerName) <
+          state.biddingOrder.indexOf(player) <
             state.biddingOrder.indexOf(highestBidder))
       ) {
         highestBid = potValue;
-        highestBidder = playerName;
+        highestBidder = player;
       }
     }
-  });
+  }
   return highestBidder;
 }
-
-export {
-  DEBUG,
-  ACTION_SELECTION,
-  BIDDING,
-  PAY_PASS,
-  TARGETING,
-  VERSUS,
-  VERSUS_HOLD,
-  STATUS_OFFLINE,
-  STATUS_ONLINE,
-  STACK_SIZE,
-  BIDDING_TIME,
-  VERSUS_HOLD_TIME,
-  ITEMS,
-  ITEM_TO_HOVER,
-  GetWinner,
-  PotValue,
-  canTarget,
-  PotEmpty,
-  getBidWinner,
-};
