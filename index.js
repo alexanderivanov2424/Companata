@@ -39,34 +39,18 @@ app.use(sessionMiddleware);
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // redirect any path under /play to login page if not logged in
-app.use('/play', (req, res, next) => {
-  const sessionId = req.session.id;
-  const username = sessionIdToUsername.get(sessionId);
+// app.use('/play', (req, res, next) => {
+//   const sessionId = req.session.id;
+//   const username = sessionIdToUsername.get(sessionId);
 
-  if (username) {
-    req.session.username = username;
-    next();
-  } else {
-    console.log(`redirecting session ${sessionId} to login page`);
-    res.redirect('/');
-  }
-});
-
-app.use('/play/lobby', (_req, res, next) => {
-  if (GAME_STARTED) {
-    res.redirect('/play/game');
-    return;
-  }
-  next();
-});
-
-app.use('/play/game', (_req, res, next) => {
-  if (!GAME_STARTED) {
-    res.redirect('/play/lobby');
-    return;
-  }
-  next();
-});
+//   if (username) {
+//     req.session.username = username;
+//     next();
+//   } else {
+//     console.log(`redirecting session ${sessionId} to login page`);
+//     res.redirect('/');
+//   }
+// });
 
 // serve static files in /public directory
 app.use(express.static('public', { extensions: ['html'] }));
@@ -83,10 +67,10 @@ app.post('/login', (req, res) => {
     usernameToSessionId.set(username, sessionId);
 
     req.session.username = username;
-    res.redirect('/play/lobby');
+    // res.redirect('/play/lobby');
   } else {
     console.log(`username ${username} is taken`);
-    res.redirect('/error');
+    socket.emit('lobby.username_taken');
   }
 });
 
@@ -592,6 +576,31 @@ io.on('connection', (socket) => {
     return;
   }
   socket.username = username;
+
+  if (sessionIdToUsername.has(sessionId)) {
+    //TODO
+    // set up lobby/game event handlers
+  } else {
+    socket.on('login.submit', (username) => {
+      // check if username is unique
+      if (!usernameToSessionId.has(username)) {
+        sessionIdToUsername.set(sessionId, username);
+        usernameToSessionId.set(username, sessionId);
+        socket.emit('login.success');
+      } else {
+        socket.emit('login.username_taken');
+      }
+    });
+  }
+
+  /*
+  if logged in:
+    set up lobby/game event handlers
+  else:
+    on submit:
+      set up lobby/game event handlers
+      add id => username to sessionIdToUsername
+  */
 
   console.log(`${username} connected`);
   socket.on('disconnect', () => {

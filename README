@@ -34,3 +34,97 @@ How to Run (bc I forget):
 
 Kill Ngrok sessions:
 taskkill /f /im ngrok.exe
+
+//TODO:
+// P1:
+// Targeting when have no money
+// Skip players with no actions
+// items to make sure that someone can win
+// owner not being set properly (ToggleScreenButton needs this)
+
+// P2:
+// restart game button
+// animations
+// auto end bid if everyone cancels
+
+// P3:
+// redo button box logic (very messy)
+// legend for the items (maybe hover text)
+
+var state = {
+turn: '',
+turnCounter: 0,
+phase: ACTION_SELECTION,
+stand: [],
+target: '', //person who bid the most or target in Targeting phase
+timer: 0,
+confirms: [],
+players: {},
+stashEmpty: false,
+};
+
+More Items:
+ice cream
+bike
+baseball
+skateboard
+basketball
+borshe
+burger
+football
+lollipop
+
+fork
+knife
+spoon
+clock
+cactus
+boat
+helicopter
+rocket
+penguin
+bell
+medal
+bitcoin
+map
+top (spinner)
+birthday hat
+kite
+needle
+thread
+teddy bear
+top hat
+high heel
+fries
+high heel shoe
+diamond
+microphone
+saxaphone
+tuba
+violin
+ring
+handbag
+backback
+phone
+camera
+candle
+book
+looking glass
+flashlight
+glasses
+saw
+scissors
+squirell
+brocolli
+stool
+toilet
+bandaid
+microscope
+telescope
+
+Phases:
+ActionSelection - select if next phase is Bidding (big for what is on the stand) or Targeting (target another players item)
+Bidding - new item is added to stand, everyone except current turn bids for item(s) on stand
+PayPass - current turn either buys item on stand or gives it to target but takes money
+Targeting - current turn selects whos item they want to target
+Versus - current turn and target each place bids for items on stand

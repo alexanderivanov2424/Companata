@@ -1,4 +1,15 @@
-/* global React, ReactDOM, io */
+/* global React*/
+const { useState, useEffect } = React;
+
+import {
+  ClientGameStateContext,
+  useOwner,
+  useLobby,
+  useGameState,
+} from './context_hooks.js';
+
+import { Player as MPlayer, Bag } from '../model.mjs';
+import { socket } from '../socket.mjs';
 
 import {
   ACTION_SELECTION,
@@ -10,29 +21,6 @@ import {
   ITEM_TO_HOVER,
   getBidWinner,
 } from '../common.mjs';
-import { Player as MPlayer, Bag } from '../model.mjs';
-
-//TODO:
-// P1:
-// owner not being set properly (ToggleScreenButton needs this)
-
-// P2:
-// restart game button
-// animations
-// auto end bid if everyone cancels
-
-// P3:
-// redo button box logic (very messy)
-// legend for the items (maybe hover text)
-
-/*
-Phases:
-ActionSelection - select if next phase is Bidding (big for what is on the stand) or Targeting (target another players item)
-Bidding - new item is added to stand, everyone except current turn bids for item(s) on stand
-PayPass - current turn either buys item on stand or gives it to target but takes money
-Targeting - current turn selects whos item they want to target
-Versus - current turn and target each place bids for items on stand
-*/
 
 function TargetingButton() {
   // button to enter Targeting phase
@@ -107,10 +95,12 @@ function CancelBid() {
 }
 
 function ToggleScreenButton() {
+  const owner = useOwner();
+  const state = useGameState();
   return (
     <button
       className={`button button-screen ${
-        false && state.players[owner].hidden ? 'button-toggle' : ''
+        state.players[owner].hidden ? 'button-toggle' : ''
       }`}
       onClick={() => socket.emit('game.action.toggle_screen')}
     >
@@ -120,6 +110,8 @@ function ToggleScreenButton() {
 }
 
 function ButtonBox({ phase, turn, target }) {
+  const owner = useOwner();
+  const state = useGameState();
   // horizontal box to hold buttons
   let buttons = [];
   switch (phase) {
@@ -177,6 +169,8 @@ function Stand({ stand }) {
 }
 
 function Middle({ players }) {
+  const owner = useOwner();
+  const lobby = useLobby();
   // the middle of the table
   return (
     <div className="middle">
@@ -209,6 +203,7 @@ function Role({ roleType }) {
 }
 
 function StatusBox({ name, status }) {
+  const state = useGameState();
   var statusList = [];
   if (status === STATUS_OFFLINE) {
     statusList.push(<Role roleType="offline" key="offline" />);
@@ -269,6 +264,8 @@ function CoinStack({ value, amount, isPot }) {
 }
 
 function Wallet({ name, wallet, hidden, isPot }) {
+  const owner = useOwner();
+  const state = useGameState();
   var hideWallet = false;
   if (state.phase === VERSUS) {
     if (owner === state.target && name === state.turn) {
@@ -313,6 +310,8 @@ function Wallet({ name, wallet, hidden, isPot }) {
 }
 
 function Item({ name, item, amount }) {
+  const owner = useOwner();
+  const state = useGameState();
   const hoverText = ITEM_TO_HOVER[item];
   if (
     name === '' || // TODO: always true
@@ -405,99 +404,69 @@ function Winner({ winner }) {
   );
 }
 
-// changes between logins
-var owner = '';
-
-// changes between games
-var lobby = [];
-
-// changes between events
-var state = {
-  turn: '',
-  turnCounter: 0,
-  phase: ACTION_SELECTION,
-  stand: [],
-  target: '', //person who bid the most or target in Targeting phase
-  timer: 0,
-  confirms: [],
-  players: {},
-  stashEmpty: false,
-};
-
-const { useEffect } = React;
-const socket = io();
-
-var secretClicks = 0;
-var tableTypeIndex = 0;
-const tableTypes = ['none', 'wood', 'metal', 'plastic'];
-
-function GameScreen() {
-  const [, updateState] = React.useState();
-  const forceUpdate = React.useCallback(() => updateState({}), []);
+export default function GameScreen() {
+  const owner = useOwner();
+  const lobby = useLobby();
+  const [state, setState] = useState(null);
 
   useEffect(() => {
     // TODO: top level await before rendering?
     socket.on('game.update.state', (data) => {
-      ({ owner, lobby, state } = JSON.parse(data, (key, value) => {
-        switch (key) {
-          case 'players':
-            for (const name in value) {
-              value[name] = new MPlayer(value[name]);
-            }
-            return value;
-          case 'wallet':
-          case 'items':
-          case 'pot':
-            return new Bag(value);
-          default:
-            return value;
-        }
-      }));
-      // console.log('got state', state);
-      forceUpdate();
+      setState(
+        JSON.parse(data, (key, value) => {
+          switch (key) {
+            case 'players':
+              for (const name in value) {
+                value[name] = new MPlayer(value[name]);
+              }
+              return value;
+            case 'wallet':
+            case 'items':
+            case 'pot':
+              return new Bag(value);
+            default:
+              return value;
+          }
+        })
+      );
     });
   }, []);
+
+  if (state === null) {
+    return null;
+  }
 
   const { turn, phase, stand, target, timer, players, winner } = state;
 
   return (
-    <div className="room">
-      <div className="table">
-        <img
+    <ClientGameStateContext.Provider value={state}>
+      <div className="room">
+        <div className="table">
+          {/* <img
           className="table-texture"
           src={`./icons/table/${tableTypes[tableTypeIndex]}.jpg`}
-        ></img>
-        {lobby.map((key, i) => (
-          <Seat
-            radius={400}
-            angle={((2 * Math.PI) / lobby.length) * (i - lobby.indexOf(owner))}
-            key={i}
-          >
-            <Player {...players[key]} />
-          </Seat>
-        ))}
-        <Middle players={players} />
-        <Stand stand={stand} />
-        {state.phase === BIDDING && <Timer timer={timer} />}
+        ></img> */}
+          {lobby.map((key, i) => (
+            <Seat
+              radius={400}
+              angle={
+                ((2 * Math.PI) / lobby.length) * (i - lobby.indexOf(owner))
+              }
+              key={i}
+            >
+              <Player {...players[key]} />
+            </Seat>
+          ))}
+          <Middle players={players} />
+          <Stand stand={stand} />
+          {state.phase === BIDDING && <Timer timer={timer} />}
+        </div>
+        {winner ? (
+          <Winner winner={winner} />
+        ) : (
+          <ButtonBox phase={phase} turn={turn} target={target} />
+        )}
       </div>
-      {winner ? (
-        <Winner winner={winner} />
-      ) : (
-        <ButtonBox phase={phase} turn={turn} target={target} />
-      )}
-    </div>
+    </ClientGameStateContext.Provider>
   );
 }
-
-const domContainer = document.querySelector('#root');
-const root = ReactDOM.createRoot(domContainer);
-root.render(<GameScreen />);
-
-const button = document.getElementById('secret');
-button.onclick = function () {
-  secretClicks++;
-  if (secretClicks > 30) {
-    tableTypeIndex += 1;
-    tableTypeIndex %= tableTypes.length;
-  }
-};
