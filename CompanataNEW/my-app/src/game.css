@@ -1,0 +1,651 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none; /* supported by Chrome and Opera */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+}
+
+:root {
+  --coin-size: 20px;
+  --item-size: 30px;
+  --hidden-wallet-width: 100px;
+  --hidden-wallet-height: 80px;
+}
+
+body {
+  padding: 2em;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.essential-button {
+  position: absolute;
+  margin: 0 auto;
+}
+
+.winner {
+  position: absolute;
+  bottom: 50%;
+  left: 0%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.winner-text {
+  color: #111;
+  font-family: 'Monaco', monospace;
+  font-size: 50px;
+  font-weight: bold;
+  letter-spacing: -1px;
+  line-height: 1;
+  text-align: center;
+}
+
+.table {
+  width: 800px;
+  height: 800px;
+  position: relative;
+  margin: 0 auto;
+  border: 1px solid rgb(0, 0, 0);
+  border-radius: 50%;
+}
+
+.table-texture {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  margin: 0 auto;
+  border-radius: 50%;
+  z-index: -10;
+}
+
+.button-box {
+  padding: 1em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-width: 200px;
+  min-height: 50px;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: rgb(132, 132, 255);
+}
+
+.button {
+  display: inline-block;
+  outline: 0;
+  border: none;
+  cursor: pointer;
+  height: 40px;
+  padding: 12px 17px;
+  border-radius: 50px;
+  background-color: lightgray;
+  color: black;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.button-toggled {
+  background-color: gray;
+}
+
+.center {
+  width: 100px;
+  height: 100px;
+  position: relative;
+  display: block;
+  margin: auto;
+  border: 1px solid rgb(0, 0, 0);
+  border-radius: 50%;
+}
+
+.middle {
+  position: relative;
+  top: 50%;
+  margin: 0 auto;
+}
+
+.stand {
+  width: 50px;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  top: 50%;
+  margin: 0 auto;
+}
+
+.status-box {
+  width: 100px;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  top: 50%;
+  margin: 0 auto;
+}
+
+.timer {
+  position: relative;
+  text-align: center;
+  font-family: 'Monaco', monospace;
+  top: 50%;
+  margin: 0 auto;
+}
+
+.seat {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: 0 0;
+}
+
+.player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform-origin: center center;
+}
+
+.player-name {
+  text-align: center;
+  position: relative;
+}
+
+.wallet {
+  display: flex;
+  flex-direction: row;
+}
+
+.wallet-hidden {
+  width: var(--hidden-wallet-width);
+  height: var(--hidden-wallet-height);
+  background-color: rgb(76, 76, 76);
+  border-radius: 20%;
+  z-index: 2;
+}
+
+.own-hidden {
+  background-color: rgba(76, 76, 76, 0.4);
+}
+
+.wallet-hidden-icon {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  position: relative;
+  object-fit: contain;
+  border-radius: 20%;
+  z-index: 3;
+}
+
+.role {
+  width: 40px;
+  height: 40px;
+}
+
+.role-turn {
+  color: gold;
+  background-color: gold;
+}
+
+.role-target {
+  color: pink;
+  background-color: pink;
+}
+
+.role-canceled {
+  color: red;
+  background-color: red;
+}
+
+.role-submitted {
+  color: blue;
+  background-color: blue;
+}
+
+.role-highest-bidder {
+  color: rgb(0, 255, 0);
+  background-color: rgb(0, 255, 0);
+}
+
+.coin-stack {
+  width: var(--coin-size);
+  min-height: var(--coin-size);
+  transform: rotate(180deg);
+  position: relative;
+  border-radius: 20%;
+}
+
+coin-stack-pot {
+  background: rgb(228, 228, 228);
+}
+
+.coin {
+  width: var(--coin-size);
+  height: var(--coin-size);
+  transform: rotate(180deg);
+  text-align: center;
+  position: relative;
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-family: 'Monaco', monospace;
+  transition: all 0.2s ease-in-out;
+}
+
+.coin:hover {
+  transform: rotate(180deg) scale(1.1);
+  z-index: 2;
+}
+
+.coin-0 {
+  background-color: rgb(90, 90, 255);
+}
+
+.coin-5 {
+  background-color: rgb(255, 90, 90);
+}
+
+.coin-10 {
+  background-color: rgb(255, 255, 90);
+}
+
+.coin-25 {
+  background-color: rgb(45, 128, 45);
+}
+
+.coin-50 {
+  background-color: rgb(128, 45, 128);
+}
+
+.pouch {
+  display: flex;
+  flex-direction: row;
+}
+
+.item-box {
+  width: var(--item-size);
+  height: var(--item-size);
+}
+
+.item {
+  position: relative;
+  border-radius: 20%;
+  transition: all 0.4s ease-in-out;
+}
+
+.item:hover {
+  transform: scale(2);
+  z-index: 2;
+}
+
+.item-text {
+  top: 10%;
+  left: 0;
+  text-align: center;
+  position: absolute;
+  font-size: 20px;
+  font-family: 'Monaco', monospace;
+  color: black;
+  text-shadow: 0.07em 0 white, 0 0.07em white, -0.07em 0 white, 0 -0.07em white;
+}
+
+.item-text:hover {
+  font-size: 0px;
+  display: block;
+}
+
+.item-icon {
+  top: 0;
+  left: 0;
+  position: absolute;
+  text-align: center;
+  border-radius: 20%;
+}
+
+.targetable {
+  box-shadow: 0px 0px 5px 5px black;
+  z-index: 2;
+}
+
+.ice {
+  background-color: rgb(159, 220, 240);
+}
+
+.rock {
+  background-color: rgb(51, 52, 58);
+  border-color: rgb(255, 0, 0);
+}
+
+.bread {
+  background-color: rgb(158, 116, 44);
+}
+
+.carrot {
+  background-color: rgb(231, 112, 26);
+}
+
+.pill {
+  background-color: rgb(61, 161, 151);
+}
+
+.fish {
+  background-color: rgb(80, 129, 219);
+}
+
+.log {
+  background-color: rgb(179, 105, 58);
+  color: rgb(255, 255, 255);
+}
+
+.cherry {
+  background-color: rgb(194, 18, 68);
+  color: white;
+}
+
+.water {
+  background-color: rgb(42, 0, 179);
+}
+
+.sauce {
+  background-color: rgb(245, 107, 107);
+}
+
+.juice {
+  background-color: rgb(255, 255, 0);
+}
+
+.mold {
+  background-color: rgb(112, 231, 116);
+}
+
+.virus {
+  background-color: rgb(178, 92, 200);
+}
+
+.kettle {
+  background-color: rgb(197, 197, 197);
+}
+
+.leg {
+  background-color: rgb(220, 144, 30);
+}
+
+.sushi {
+  background-color: rgb(164, 222, 148);
+}
+
+.brick {
+  background-color: rgb(209, 111, 72);
+}
+
+.computer {
+  background-color: rgb(161, 177, 209);
+}
+
+.mellon {
+  background-color: rgb(75, 185, 20);
+}
+
+.spaghetti {
+  background-color: rgb(248, 203, 119);
+}
+
+.onigiri {
+  background-color: rgb(155, 215, 178);
+}
+
+.shrimp {
+  background-color: rgb(92, 120, 245);
+}
+
+.gear {
+  background-color: rgb(165, 64, 64);
+}
+
+.light {
+  background-color: rgb(244, 242, 143);
+}
+
+.shirt {
+  background-color: rgb(176, 176, 176);
+}
+
+.tools {
+  background-color: rgb(96, 96, 96);
+}
+
+.present {
+  background-color: rgb(255, 86, 86);
+}
+
+.tree {
+  background-color: rgb(157, 215, 247);
+}
+
+.wreath {
+  background-color: rgb(164, 57, 57);
+}
+
+.turkey {
+  background-color: rgb(255, 115, 115);
+}
+
+.pumpkin {
+  background-color: rgb(86, 86, 86);
+}
+
+.leaf {
+  background-color: rgb(207, 234, 126);
+}
+
+.magnet {
+  background-color: rgb(164, 164, 164);
+}
+
+.ant {
+  background-color: rgb(139, 105, 76);
+}
+
+.anthill {
+  background-color: rgb(123, 181, 238);
+}
+
+.bee {
+  background-color: rgb(81, 221, 71);
+}
+
+.beehive {
+  background-color: rgb(213, 164, 40);
+}
+
+.soccer {
+  background-color: rgb(77, 180, 57);
+}
+
+.cast {
+  background-color: rgb(107, 168, 194);
+}
+
+.tooth {
+  background-color: rgb(227, 227, 187);
+}
+
+.incognito {
+  background-color: rgb(111, 111, 111);
+}
+
+.hat {
+  background-color: rgb(209, 172, 124);
+}
+
+.soup {
+  background-color: rgb(65, 146, 233);
+}
+
+.banana {
+  background-color: rgb(252, 249, 82);
+}
+
+.mario {
+  background-color: rgb(0, 0, 0);
+}
+
+.minecraft {
+  background-image: linear-gradient(
+    to top left,
+    rgb(74, 105, 197),
+    rgb(129, 160, 255)
+  );
+}
+
+.tetris {
+  background-image: linear-gradient(rgb(145, 246, 145), rgb(53, 219, 32));
+}
+
+.sun {
+  background-color: rgb(117, 197, 250);
+}
+
+.galaxy {
+  background-color: rgb(99, 66, 66);
+}
+
+.planet {
+  background-color: rgb(91, 66, 81);
+}
+
+.comet {
+  background-color: rgb(58, 89, 100);
+}
+
+.satellite {
+  background-color: rgb(68, 98, 64);
+}
+
+.gasoline {
+  background-color: rgb(222, 107, 121);
+}
+
+.house {
+  background-color: rgb(212, 121, 235);
+}
+
+.strawberry {
+  background-color: rgb(229, 105, 115);
+}
+
+.blueberry {
+  background-color: rgb(82, 122, 214);
+}
+
+.dango {
+  background-color: rgb(190, 77, 227);
+}
+
+.cake {
+  background-color: rgb(228, 54, 184);
+}
+
+.cookie {
+  background-color: rgb(179, 155, 134);
+}
+
+.chocolate {
+  background-color: rgb(240, 72, 72);
+}
+
+.rot {
+  background-color: rgb(141, 156, 115);
+}
+
+.poop {
+  background-color: rgb(239, 208, 104);
+}
+
+.soap {
+  background-color: rgb(126, 218, 222);
+}
+
+.toothbrush {
+  background-color: rgb(109, 212, 218);
+}
+
+.milk {
+  background-color: rgb(251, 255, 148);
+}
+
+.butter {
+  background-color: rgb(251, 223, 121);
+}
+
+.grass {
+  background-color: rgb(182, 150, 99);
+}
+
+.plane {
+  background-color: rgb(144, 233, 255);
+}
+
+.car {
+  background-color: rgb(180, 180, 180);
+}
+
+.paper {
+  background-color: rgb(214, 148, 237);
+}
+
+.pencil {
+  background-color: rgb(242, 224, 105);
+}
+
+.blackberry {
+  background-color: rgb(173, 75, 195);
+}
+
+.pong {
+  background-image: linear-gradient(
+    to right,
+    rgb(109, 212, 109),
+    rgb(112, 112, 255)
+  );
+}
+
+.universe {
+  background-color: rgb(120, 120, 120);
+}
+
+.motorcycle {
+  background-color: rgb(160, 160, 160);
+}
+
+.tornado {
+  background-color: rgb(136, 190, 193);
+}
+
+.wine {
+  background-color: rgb(239, 165, 100);
+}
+
+.cheese {
+  background-color: rgb(242, 227, 127);
+}
+
+.clouds {
+  background-color: rgb(124, 230, 226);
+}
+
+.dice {
+  background-color: rgb(209, 122, 171);
+}
