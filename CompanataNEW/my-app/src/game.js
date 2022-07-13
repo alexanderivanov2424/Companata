@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 
 import {
   ClientGameStateContext,
   useOwner,
   useLobby,
   useGameState,
-} from "./context_hooks.mjs";
+} from './context_hooks.mjs';
 
-import { Player as MPlayer, Bag } from "./model.mjs";
-import { socket } from "./socket.mjs";
+import { Player as MPlayer, Bag } from './model.mjs';
+import { socket } from './socket.mjs';
 
 import {
   ACTION_SELECTION,
@@ -19,14 +19,14 @@ import {
   STATUS_OFFLINE,
   ITEM_TO_HOVER,
   getBidWinner,
-} from "./common.mjs";
+} from './common.mjs';
 
 function TargetingButton() {
   // button to enter Targeting phase
   return (
     <button
       className="button button-targeting"
-      onClick={() => socket.emit("game.action.target_phase")}
+      onClick={() => socket.emit('game.action.target_phase')}
     >
       Targeting
     </button>
@@ -38,7 +38,7 @@ function SubmitBidButton() {
   return (
     <button
       className="button button-submit"
-      onClick={() => socket.emit("game.action.confirm_bid_versus")}
+      onClick={() => socket.emit('game.action.confirm_bid_versus')}
     >
       Submit
     </button>
@@ -50,7 +50,7 @@ function BiddingButton() {
   return (
     <button
       className="button button-bidding"
-      onClick={() => socket.emit("game.action.bidding_phase")}
+      onClick={() => socket.emit('game.action.bidding_phase')}
     >
       Bidding
     </button>
@@ -62,7 +62,7 @@ function PayButton() {
   return (
     <button
       className="button button-pay"
-      onClick={() => socket.emit("game.action.choose_pay")}
+      onClick={() => socket.emit('game.action.choose_pay')}
     >
       Pay
     </button>
@@ -74,7 +74,7 @@ function PassButton() {
   return (
     <button
       className="button button-pass"
-      onClick={() => socket.emit("game.action.choose_pass")}
+      onClick={() => socket.emit('game.action.choose_pass')}
     >
       Pass
     </button>
@@ -86,7 +86,7 @@ function CancelBid() {
   return (
     <button
       className="button button-cancel"
-      onClick={() => socket.emit("game.action.cancel_bid")}
+      onClick={() => socket.emit('game.action.cancel_bid')}
     >
       Cancel
     </button>
@@ -99,9 +99,9 @@ function ToggleScreenButton() {
   return (
     <button
       className={`button button-screen ${
-        state.players[owner].hidden ? "button-toggle" : ""
+        state.players[owner].hidden ? 'button-toggle' : ''
       }`}
-      onClick={() => socket.emit("game.action.toggle_screen")}
+      onClick={() => socket.emit('game.action.toggle_screen')}
     >
       Screen
     </button>
@@ -161,7 +161,7 @@ function Stand({ stand }) {
   return (
     <div className="stand">
       {stand.map((item, i) => (
-        <Item name={""} item={item} amount={""} key={i} />
+        <Item name={''} item={item} amount={''} key={i} />
       ))}
     </div>
   );
@@ -239,7 +239,7 @@ function Coin({ value }) {
   return (
     <div
       className={`coin coin-${value}`}
-      onClick={() => socket.emit("game.action.bid", value)}
+      onClick={() => socket.emit('game.action.bid', value)}
     >
       {value}
     </div>
@@ -252,7 +252,7 @@ function CoinStack({ value, amount, isPot }) {
   const shift =
     amount > 4 ? (maxStackSize - amount * coinSize) / (amount - 1) : 0;
   return (
-    <div className={`coin-stack ${isPot ? "coin-stack-pot" : ""}`}>
+    <div className={`coin-stack ${isPot ? 'coin-stack-pot' : ''}`}>
       {new Array(amount).fill().map((_, i) => (
         <div style={{ marginTop: i === 0 ? 0 : shift }} key={i}>
           {isPot ? <PotCoin value={value} /> : <Coin value={value} />}
@@ -291,7 +291,11 @@ function Wallet({ name, wallet, hidden, isPot }) {
     } else {
       return (
         <div className="wallet wallet-hidden">
-          <img className="wallet-hidden-icon" src="./icons/hidden.png"></img>
+          <img
+            className="wallet-hidden-icon"
+            src="./icons/hidden.png"
+            alt="hidden wallet"
+          ></img>
         </div>
       );
     }
@@ -313,14 +317,18 @@ function Item({ name, item, amount }) {
   const state = useGameState();
   const hoverText = ITEM_TO_HOVER[item];
   if (
-    name === "" || // TODO: always true
+    name === '' || // TODO: always true
     state.phase !== TARGETING ||
     !state.players[state.turn].canTarget(state.players[name], item)
   ) {
     return (
       <div title={hoverText} className={`item-box item ${item}`}>
-        <img className="item-box item-icon" src={`./icons/items/${item}.png`} />
-        <div className={"item-box item-text"}>{amount}</div>
+        <img
+          className="item-box item-icon"
+          src={`./icons/items/${item}.png`}
+          alt="item"
+        />
+        <div className={'item-box item-text'}>{amount}</div>
       </div>
     );
   }
@@ -330,18 +338,26 @@ function Item({ name, item, amount }) {
       <div
         title={hoverText}
         className={`item-box item ${item} targetable`}
-        onClick={() => socket.emit("game.action.target", name, item)}
+        onClick={() => socket.emit('game.action.target', name, item)}
       >
-        <img className="item-box item-icon" src={`./icons/items/${item}.png`} />
-        <div className={"item-box item-text"}>{amount}</div>
+        <img
+          className="item-box item-icon"
+          src={`./icons/items/${item}.png`}
+          alt="item"
+        />
+        <div className={'item-box item-text'}>{amount}</div>
       </div>
     );
   } else {
     //otherwise only highlight
     return (
       <div title={hoverText} className={`item-box item ${item} targetable`}>
-        <img className="item-box item-icon" src={`./icons/items/${item}.png`} />
-        <div className={"item-box item-text"}>{amount}</div>
+        <img
+          className="item-box item-icon"
+          src={`./icons/items/${item}.png`}
+          alt="item"
+        />
+        <div className={'item-box item-text'}>{amount}</div>
       </div>
     );
   }
@@ -381,7 +397,7 @@ function Seat({ inner, radius, angle, children }) {
       className="seat"
       style={{
         transform: `rotate(${angle}rad) translate(-50%, ${radius}px) ${
-          inner ? "" : "translateY(-100%)"
+          inner ? '' : 'translateY(-100%)'
         }`,
       }}
     >
@@ -410,18 +426,18 @@ export default function GameScreen() {
 
   useEffect(() => {
     // TODO: top level await before rendering?
-    socket.on("game.update.state", (data) => {
+    socket.on('game.update.state', (data) => {
       setState(
         JSON.parse(data, (key, value) => {
           switch (key) {
-            case "players":
+            case 'players':
               for (const name in value) {
                 value[name] = new MPlayer(value[name]);
               }
               return value;
-            case "wallet":
-            case "items":
-            case "pot":
+            case 'wallet':
+            case 'items':
+            case 'pot':
               return new Bag(value);
             default:
               return value;

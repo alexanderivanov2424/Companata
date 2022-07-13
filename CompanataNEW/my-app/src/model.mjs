@@ -1,10 +1,6 @@
 import { STATUS_ONLINE, STACK_SIZE, STACKS_TO_WIN } from './common.mjs';
 
 export class Bag extends Map {
-  constructor(iterable) {
-    super(iterable);
-  }
-
   isEmpty() {
     return this.size === 0;
   }

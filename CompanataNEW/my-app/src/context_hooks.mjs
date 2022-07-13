@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 //initialize to null to prevent usage before initialization
 export const ClientContext = React.createContext(null);

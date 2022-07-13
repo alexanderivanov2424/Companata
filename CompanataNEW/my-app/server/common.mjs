@@ -14,14 +14,10 @@ export const BIDDING_TIME = 10;
 export const VERSUS_HOLD_TIME = 3;
 export const STACKS_TO_WIN = 4;
 
-Object.prototype[Symbol.iterator] = function* () {
-  yield* Object.values(this);
-};
-
 function shuffle(array) {
   let currentIndex = array.length,
     randomIndex;
-  while (currentIndex != 0) {
+  while (currentIndex !== 0) {
     randomIndex = Math.floor(Math.random() * currentIndex);
     currentIndex--;
     [array[currentIndex], array[randomIndex]] = [
@@ -129,7 +125,7 @@ export function GetWinnerName(state) {
 export function getBidWinner(state) {
   var highestBid = -1;
   var highestBidder = state.currentPlayer;
-  for (const player of state.players) {
+  for (const player of Object.values(state.players)) {
     if (state.confirms.includes(player)) {
       continue;
     }
