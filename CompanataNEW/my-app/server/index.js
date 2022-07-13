@@ -1,10 +1,7 @@
 import { createServer } from 'http';
 
-import cors from 'cors';
-
 import express from 'express';
 import session from 'express-session';
-import bodyParser from 'body-parser';
 import { Server } from 'socket.io';
 
 import {
@@ -35,63 +32,9 @@ const sessionMiddleware = session({
   saveUninitialized: false,
 });
 
-app.use(cors());
-
 // -------------- Express Middleware --------------
 
 app.use(sessionMiddleware);
-app.use(bodyParser.urlencoded({ extended: true }));
-
-// redirect any path under /play to login page if not logged in
-// app.use('/play', (req, res, next) => {
-//   const sessionId = req.session.id;
-//   const username = sessionIdToUsername.get(sessionId);
-
-//   if (username) {
-//     req.session.username = username;
-//     next();
-//   } else {
-//     console.log(`redirecting session ${sessionId} to login page`);
-//     res.redirect('/');
-//   }
-// });
-
-// serve static files in /public directory
-app.use(express.static('public', { extensions: ['html'] }));
-
-// -------------- Express Routes ------------------
-
-app.post('/login', (req, res) => {
-  const sessionId = req.session.id;
-  const { username } = req.body;
-
-  if (!usernameToSessionId.has(username)) {
-    console.log(`${username} logged in from session ${sessionId}`);
-    sessionIdToUsername.set(sessionId, username);
-    usernameToSessionId.set(username, sessionId);
-
-    req.session.username = username;
-    // res.redirect('/play/lobby');
-  } else {
-    console.log(`username ${username} is taken`);
-    socket.emit('lobby.username_taken');
-  }
-});
-
-app.post('/logout', (req, res) => {
-  const sessionId = req.session.id;
-  const username = sessionIdToUsername.get(sessionId);
-
-  console.log(`${username} logged out from session ${sessionId}`);
-  sessionIdToUsername.delete(sessionId, username);
-  usernameToSessionId.delete(username, sessionId);
-
-  req.session.destroy(() => {
-    // disconnect all Socket.IO connections linked to this session ID
-    io.to(sessionId).disconnectSockets();
-    res.status(204).end();
-  });
-});
 
 // -------------- Server State --------------------
 
@@ -586,6 +529,11 @@ io.on('connection', (socket) => {
   }
   socket.username = username;
 
+  console.log(`${username} connected`);
+  socket.on('disconnect', () => {
+    console.log(`${username} disconnected`);
+  });
+
   if (sessionIdToUsername.has(sessionId)) {
     //TODO
     // set up lobby/game event handlers
@@ -610,11 +558,6 @@ io.on('connection', (socket) => {
       set up lobby/game event handlers
       add id => username to sessionIdToUsername
   */
-
-  console.log(`${username} connected`);
-  socket.on('disconnect', () => {
-    console.log(`${username} disconnected`);
-  });
 
   socket.join(sessionId);
 
