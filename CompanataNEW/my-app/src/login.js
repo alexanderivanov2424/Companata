@@ -15,7 +15,6 @@ function Errors({ children }) {
 }
 
 export default function LoginScreen({ setOwner }) {
-  //TODO
   const [errors, setErrors] = useState([]);
 
   useEffect(() => {

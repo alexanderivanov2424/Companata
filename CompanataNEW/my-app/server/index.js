@@ -405,7 +405,7 @@ function filterGhosts() {
 
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:3000',
+    origin: '*',
     methods: ['GET', 'POST'],
   },
 });
@@ -457,7 +457,7 @@ function lobbyOnConnect(socket, username) {
   socket.on('lobby.start_game', () => {
     const host = lobby[0];
     if (username === host) {
-      io.emit('redirect', '/play/game');
+      io.emit('game_started');
       InitGameState(lobby);
       setInterval(sendGameState, 100);
     }
