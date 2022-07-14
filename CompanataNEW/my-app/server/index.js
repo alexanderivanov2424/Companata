@@ -518,67 +518,67 @@ function gameOnConnect(socket, username) {
   });
 }
 
+function onConnect(socket, username) {}
+
 io.on('connection', (socket) => {
   const req = socket.request;
   const sessionId = req.session.id;
-  const username = sessionIdToUsername.get(sessionId);
 
-  // filter ghosts
-  if (!username) {
-    return;
+  function onConnect(username) {
+    // filter ghosts
+    if (!username) {
+      console.warn('spooky ghost');
+      return;
+    }
+    socket.username = username;
+
+    console.log(`${username} connected`);
+    socket.on('disconnect', () => {
+      console.log(`${username} disconnected`);
+    });
+
+    socket.join(sessionId);
+
+    socket.use((_, next) => {
+      req.session.reload((err) => {
+        if (err) {
+          socket.disconnect();
+        } else {
+          next();
+        }
+      });
+    });
+
+    socket.onAny((event, ...args) => {
+      console.log(event, username + ':', args);
+    });
+
+    if (!GAME_STARTED) {
+      lobbyOnConnect(socket, username);
+    } else {
+      gameOnConnect(socket, username);
+    }
   }
-  socket.username = username;
 
-  console.log(`${username} connected`);
-  socket.on('disconnect', () => {
-    console.log(`${username} disconnected`);
-  });
-
+  console.log(sessionId);
   if (sessionIdToUsername.has(sessionId)) {
-    //TODO
-    // set up lobby/game event handlers
+    console.log('has');
+    const username = sessionIdToUsername.get(sessionId);
+    socket.emit('login.success', username);
+    onConnect(username);
   } else {
+    console.log('not has');
     socket.on('login.submit', (username) => {
       // check if username is unique
       if (!usernameToSessionId.has(username)) {
         sessionIdToUsername.set(sessionId, username);
         usernameToSessionId.set(username, sessionId);
-        socket.emit('login.success');
+        socket.emit('login.success', username);
+        onConnect(username);
       } else {
         socket.emit('login.username_taken');
       }
     });
-  }
-
-  /*
-  if logged in:
-    set up lobby/game event handlers
-  else:
-    on submit:
-      set up lobby/game event handlers
-      add id => username to sessionIdToUsername
-  */
-
-  socket.join(sessionId);
-
-  socket.use((_, next) => {
-    req.session.reload((err) => {
-      if (err) {
-        socket.disconnect();
-      } else {
-        next();
-      }
-    });
-  });
-
-  socket.onAny((event, ...args) => {
-    console.log(event, username + ':', args);
-  });
-
-  if (!GAME_STARTED) {
-    lobbyOnConnect(socket, username);
-  } else {
-    gameOnConnect(socket, username);
   }
 });
 

@@ -25,7 +25,7 @@ export default function LoginScreen({ setOwner }) {
 
   const onSubmit = (event) => {
     event.preventDefault();
-    socket.emit('login.submit', event.target);
+    socket.emit('login.submit', new FormData(event.target).get('username'));
   };
 
   return (

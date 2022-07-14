@@ -26,7 +26,8 @@ function App() {
   if (owner === null) {
     return <LoginScreen setOwner={setOwner} />;
   } else if (lobby === null) {
-    //TODO game started
+    //TODO logged in but in lobby
+    console.log('render lobby');
   } else {
     return (
       <ClientContext.Provider value={{ owner, lobby }}>
