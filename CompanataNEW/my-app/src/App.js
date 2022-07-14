@@ -18,15 +18,15 @@ function App() {
 
   useEffect(() => {
     socket.on('lobby.update.lobby_list', (lobby) => {
-      console.log('got lobby', lobby);
+      // console.log('got lobby', lobby);
       setLobby(lobby);
     });
     socket.on('lobby.update.client_username', (owner) => {
-      console.log('got owner', owner);
+      // console.log('got owner', owner);
       setOwner(owner);
     });
     socket.on('game_started', () => {
-      console.log('game started');
+      // console.log('game started');
       setGameStarted(true);
     });
   }, []);

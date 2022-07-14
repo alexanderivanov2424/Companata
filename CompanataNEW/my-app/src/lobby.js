@@ -22,7 +22,7 @@ export default function LobbyScreen({ owner, lobby }) {
   return (
     <div>
       {lobby.map(name => <LobbyMemeber name={name} key={name}/>) }
-      {lobby[0] === owner ? <StartGameButton /> : null}
+      {lobby[0] === owner && <StartGameButton />}
     </div>
   );
 }

@@ -82,7 +82,7 @@ function InitGameState(lobby) {
     },
   };
 
-  console.log(DEBUG, lobby, ITEMS);
+  console.log({ DEBUG, lobby, ITEMS });
   if (DEBUG) {
     for (const player of Object.values(state.players)) {
       console.log(player.name);
@@ -404,15 +404,12 @@ function filterGhosts() {
 // -------------- Socket.IO Events ----------------
 
 const io = new Server(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST'],
-  },
+  path: '/socket',
 });
 
 io.use((socket, next) => sessionMiddleware(socket.request, {}, next));
 
-function lobbyOnConnect(socket, username) {
+function lobbyOnConnect(socket, username, gameOnConnect) {
   if (!lobby.includes(username)) {
     lobby.push(username);
     io.emit('lobby.update.lobby_list', lobby);
@@ -449,7 +446,7 @@ function lobbyOnConnect(socket, username) {
     for (const socket of await io.fetchSockets()) {
       socket.emit(
         'game.update.state',
-        JSON.stringify({ owner: socket.username, lobby, state })
+        JSON.stringify(state)
       );
     }
   }
@@ -460,6 +457,7 @@ function lobbyOnConnect(socket, username) {
       io.emit('game_started');
       InitGameState(lobby);
       setInterval(sendGameState, 100);
+      gameOnConnect(socket, username);
     }
   });
 }
@@ -518,8 +516,6 @@ function gameOnConnect(socket, username) {
   });
 }
 
-function onConnect(socket, username) {}
-
 io.on('connection', (socket) => {
   const req = socket.request;
   const sessionId = req.session.id;
@@ -539,35 +535,33 @@ io.on('connection', (socket) => {
 
     socket.join(sessionId);
 
-    socket.use((_, next) => {
-      req.session.reload((err) => {
-        if (err) {
-          socket.disconnect();
-        } else {
-          next();
-        }
-      });
-    });
+    // socket.use((_, next) => {
+    //   req.session.reload((err) => {
+    //     if (err) {
+    //       console.log(err);
+    //       socket.disconnect();
+    //     } else {
+    //       next();
+    //     }
+    //   });
+    // });
 
     socket.onAny((event, ...args) => {
       console.log(event, username + ':', args);
     });
 
     if (!GAME_STARTED) {
-      lobbyOnConnect(socket, username);
+      lobbyOnConnect(socket, username, gameOnConnect);
     } else {
       gameOnConnect(socket, username);
     }
   }
 
-  console.log(sessionId);
   if (sessionIdToUsername.has(sessionId)) {
-    console.log('has');
     const username = sessionIdToUsername.get(sessionId);
     socket.emit('login.success', username);
     onConnect(username);
   } else {
-    console.log('not has');
     socket.on('login.submit', (username) => {
       // check if username is unique
       if (!usernameToSessionId.has(username)) {
