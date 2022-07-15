@@ -5,10 +5,10 @@ import {
   useOwner,
   useLobby,
   useGameState,
-} from './context_hooks.mjs';
+} from './context_hooks.js';
 
-import { Player as MPlayer, Bag } from './model.mjs';
-import { socket } from './socket.mjs';
+import { Player as MPlayer, Bag } from './server/common/model.js';
+import { socket } from './socket.js';
 
 import {
   ACTION_SELECTION,
@@ -19,7 +19,7 @@ import {
   STATUS_OFFLINE,
   ITEM_TO_HOVER,
   getBidWinner,
-} from './common.mjs';
+} from './server/common/helpers.js';
 
 function TargetingButton() {
   // button to enter Targeting phase

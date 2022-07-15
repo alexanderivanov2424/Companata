@@ -20,8 +20,8 @@ import {
   ITEMS,
   GetWinnerName,
   getBidWinner,
-} from './common.mjs';
-import { Player } from './model.mjs';
+} from './common/helpers.js';
+import { Player } from './common/model.js';
 
 const app = express();
 const server = createServer(app);

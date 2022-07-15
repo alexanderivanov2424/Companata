@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 
-import { ClientContext } from './context_hooks.mjs';
+import { ClientContext } from './context_hooks.js';
 import LoginScreen from './login.js';
 import LobbyScreen from './lobby.js';
 import GameScreen from './game.js';
 
-import { socket } from './socket.mjs';
+import { socket } from './socket.js';
 
 import './game.css';
 

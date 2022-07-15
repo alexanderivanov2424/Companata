@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-import { socket } from './socket.mjs';
+import { socket } from './socket.js';
 
 function Errors({ children }) {
   return (
