@@ -24,6 +24,9 @@ export class Bag extends Map {
   }
 
   remove(key, count = 1) {
+    if (!this.has(key)) {
+      return false;
+    }
     const newCount = this.get(key) - count;
     if (count <= 0) {
       return false;
@@ -66,6 +69,13 @@ export class Player {
     this.pot = pot;
   }
 
+  reset() {
+    this.hidden = false;
+    this.wallet = new Bag().set(0, 2).set(5, 4).set(10, 3);
+    this.items = new Bag();
+    this.pot = new Bag();
+  }
+
   isWinner() {
     let fullStacks = 0;
     for (const count of this.items.values()) {
@@ -93,6 +103,14 @@ export class Player {
     let total = 0;
     for (const [coin, count] of this.wallet.entries()) {
       total += coin * count;
+    }
+    return total;
+  }
+
+  coinCount() {
+    let total = 0;
+    for (const count of this.wallet.values()) {
+      total += count;
     }
     return total;
   }

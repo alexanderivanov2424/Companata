@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import express from 'express';
 import session from 'express-session';
 import { Server } from 'socket.io';
+import { serialize, parse } from 'cookie';
 
 import {
   DEBUG,
@@ -20,6 +21,8 @@ import {
   ITEMS,
   GetWinnerName,
   getBidWinner,
+  canPlayerTarget,
+  CanSomeoneBid,
 } from './common/helpers.js';
 import { Player } from './common/model.js';
 
@@ -47,8 +50,10 @@ var kickVote = {};
 // -------------- Game State --------------------
 var GAME_STARTED = false;
 
-var state = {};
+var state = null;
 var timerEvent = null;
+var biddingTimeout = null;
+var biddingStartTime = new Date().getTime();
 
 var itemStash = [];
 
@@ -56,11 +61,35 @@ for (var i = 0; i < STACK_SIZE; i++) {
   itemStash.push(...ITEMS);
 }
 
+function resetGame() {
+  clearTimeout(timerEvent);
+  timerEvent = null;
+  itemStash = [];
+
+  for (var i = 0; i < STACK_SIZE; i++) {
+    itemStash.push(...ITEMS);
+  }
+
+  state.turnCounter = 0;
+  state.phase = ACTION_SELECTION;
+  state.stand = [];
+  state.target = '';
+  state.timer = 0;
+  state.confirms = [];
+  for (var player of Object.values(state.players)) {
+    player.reset();
+  }
+  state.stashEmpty = false;
+  state.biddingOrder = [];
+  state.winner = null;
+  state.isTieGame = false;
+}
+
 function InitGameState(lobby) {
   GAME_STARTED = true;
   state = {
     turnCounter: 0,
-    phase: 'ActionSelection',
+    phase: ACTION_SELECTION,
     stand: [],
     target: '', // name of the player who bid the most or target in Targeting phase
     timer: 0,
@@ -71,6 +100,7 @@ function InitGameState(lobby) {
     stashEmpty: false,
     biddingOrder: [],
     winner: null,
+    isTieGame: false,
     get turn() {
       return lobby[this.turnCounter % lobby.length];
     },
@@ -107,6 +137,7 @@ function ProgressTurn() {
   state.stand = [];
   state.target = '';
   state.timer = 0;
+  state.totalTime = 0;
   state.confirms = [];
   state.biddingOrder = [];
   if (state.turnCounter % lobby.length === 0) {
@@ -116,6 +147,20 @@ function ProgressTurn() {
     state.stashEmpty = true;
   }
   state.winner = GetWinnerName(state);
+
+  var gameIsTie = true;
+  for (var i = 0; i < Object.values(state.players).length; i++) {
+    if (!canPlayerTarget(state, state.currentPlayer) && state.stashEmpty) {
+      state.turnCounter++;
+    } else {
+      gameIsTie = false;
+      break;
+    }
+  }
+  if (gameIsTie) {
+    state.winner = 'NOT YOU';
+    state.isTieGame = true;
+  }
 }
 
 function ClaimStand(player) {
@@ -147,6 +192,20 @@ function SubmitItemToStand(player, item) {
   state.stand.push(item);
 }
 
+function clearTimers() {
+  clearTimeout(timerEvent);
+  timerEvent = null;
+  clearTimeout(biddingTimeout);
+  biddingTimeout = null;
+  biddingStartTime = new Date().getTime();
+}
+
+function setTimers() {
+  biddingTimeout = setTimeout(BiddingTimeout, state.timer * 1000);
+  timerEvent = setInterval(UpdateTimer, 100);
+  biddingStartTime = new Date().getTime();
+}
+
 function Event_StartBiddingPhase() {
   if (state.phase !== ACTION_SELECTION) {
     console.warn('Attempt to start bidding while not in action select phase');
@@ -156,15 +215,19 @@ function Event_StartBiddingPhase() {
     console.warn('Cannot bid when stash is empty');
     return;
   }
-  state.timer = BIDDING_TIME;
-  state.stand.push(GenerateItem());
   state.phase = BIDDING;
-  setTimeout(BiddingTimeout, state.timer * 1000);
-  timerEvent = setInterval(UpdateTimer, 1000);
+  state.stand.push(GenerateItem());
+  if (CanSomeoneBid(state)) {
+    state.timer = BIDDING_TIME;
+    state.totalTime = BIDDING_TIME;
+    setTimers();
+  } else {
+    BiddingTimeout();
+  }
 }
 
 function UpdateTimer() {
-  state.timer--;
+  state.timer = BIDDING_TIME - (new Date().getTime() - biddingStartTime) / 1000;
 }
 
 function Event_MakeBid(thisPlayer, coin) {
@@ -186,7 +249,7 @@ function Event_MakeBid(thisPlayer, coin) {
     );
     return;
   }
-  if (state.confirms.includes(thisPlayer)) {
+  if (state.confirms.includes(thisPlayer.name)) {
     console.warn('player that canceled bid cannot bid again');
     return;
   }
@@ -201,13 +264,14 @@ function Event_MakeBid(thisPlayer, coin) {
 }
 
 function BiddingTimeout() {
+  clearTimers();
   //when bidding times out
   if (state.phase !== BIDDING) {
     console.error('Bidding timeout not in bidding phase');
     return;
   }
-  clearTimeout(timerEvent);
   state.timer = 0;
+  state.totalTime = 0;
   const highestBidder = getBidWinner(state);
   if (highestBidder === state.currentPlayer) {
     ClaimStand(state.currentPlayer);
@@ -228,11 +292,7 @@ function Event_StartTargetingPhase() {
     console.warn('Attempt to start targeting while not in action select phase');
     return;
   }
-  const canTarget = [...state.currentPlayer.items.keys()].some((item) =>
-    [...Object.values(state.players)].some((player) =>
-      state.currentPlayer.canTarget(player, item)
-    )
-  );
+  const canTarget = canPlayerTarget(state, state.currentPlayer);
   if (!canTarget) {
     console.warn(
       'Attempt to start targeting when no available items for targeting'
@@ -268,18 +328,18 @@ function Event_ConfirmBidVersus(player) {
     console.warn('Player not in versus tried to confirm bid');
     return;
   }
-  if (state.confirms.includes(player)) {
+  if (state.confirms.includes(player.name)) {
     console.warn('confirming player already confirmed');
     return;
   }
-  if (player.pot.isEmpty()) {
+  if (player.pot.isEmpty() && player.coinCount() > 0) {
     console.warn('cannot submit without bidding');
     return;
   }
-  state.confirms.push(player);
+  state.confirms.push(player.name);
   if (
-    state.confirms.includes(state.currentPlayer) &&
-    state.confirms.includes(state.targetPlayer)
+    state.confirms.includes(state.currentPlayer.name) &&
+    state.confirms.includes(state.targetPlayer.name)
   ) {
     state.phase = VERSUS_HOLD;
     setTimeout(VersusHoldTimeout, VERSUS_HOLD_TIME * 1000);
@@ -344,12 +404,17 @@ function Event_CancelBid(thisPlayer) {
     console.warn('Attempt to cancel bid while not in bidding phase');
     return;
   }
-  if (state.confirms.includes(thisPlayer)) {
+  if (state.confirms.includes(thisPlayer.name)) {
     console.warn('Player already canceled bid');
     return;
   }
-  state.confirms.push(thisPlayer);
+  state.confirms.push(thisPlayer.name);
   thisPlayer.sendPot(thisPlayer);
+
+  if (!CanSomeoneBid(state)) {
+    clearTimers();
+    BiddingTimeout();
+  }
 }
 
 function Event_CancelBidVersus(thisPlayer) {
@@ -358,7 +423,7 @@ function Event_CancelBidVersus(thisPlayer) {
     console.warn('Attempt to cancel bid while not in versus phase');
     return;
   }
-  if (state.confirms.includes(thisPlayer)) {
+  if (state.confirms.includes(thisPlayer.name)) {
     console.warn('Player cannot cancel bid after amount confirmed');
     return;
   }
@@ -435,7 +500,7 @@ function lobbyOnConnect(socket, username, gameOnConnect) {
       }
       kickVote[badActor].push(username);
       if (kickVote[badActor].length > lobby.length / 2) {
-        i = lobby.indexOf(badActor);
+        var i = lobby.indexOf(badActor);
         lobby.splice(i, 1);
         io.emit('lobby.update.lobby_list', lobby);
       }
@@ -444,10 +509,7 @@ function lobbyOnConnect(socket, username, gameOnConnect) {
 
   async function sendGameState() {
     for (const socket of await io.fetchSockets()) {
-      socket.emit(
-        'game.update.state',
-        JSON.stringify(state)
-      );
+      socket.emit('game.update.state', JSON.stringify(state));
     }
   }
 
@@ -459,7 +521,6 @@ function lobbyOnConnect(socket, username, gameOnConnect) {
       setInterval(sendGameState, 100);
       for (const socket of await io.fetchSockets()) {
         gameOnConnect(socket, socket.username);
-        console.log("GAME STARTING", socket, socket.username);
       }
     }
   });
@@ -486,9 +547,7 @@ function gameOnConnect(socket, username) {
     Event_StartBiddingPhase();
   });
 
-  console.log("socket setup");
   socket.on('game.action.bid', (value) => {
-    console.log("bid made");
     Event_MakeBid(thisPlayer, value);
   });
 
@@ -519,6 +578,10 @@ function gameOnConnect(socket, username) {
   socket.on('game.action.toggle_screen', () => {
     Event_ToggleScreen(thisPlayer);
   });
+
+  socket.on('game.restart', () => {
+    resetGame();
+  });
 }
 
 io.on('connection', (socket) => {
@@ -526,30 +589,12 @@ io.on('connection', (socket) => {
   const sessionId = req.session.id;
 
   function onConnect(username) {
-    // filter ghosts
-    if (!username) {
-      console.warn('spooky ghost');
-      return;
-    }
     socket.username = username;
 
     console.log(`${username} connected`);
     socket.on('disconnect', () => {
       console.log(`${username} disconnected`);
     });
-
-    socket.join(sessionId);
-
-    // socket.use((_, next) => {
-    //   req.session.reload((err) => {
-    //     if (err) {
-    //       console.log(err);
-    //       socket.disconnect();
-    //     } else {
-    //       next();
-    //     }
-    //   });
-    // });
 
     socket.onAny((event, ...args) => {
       console.log(event, username + ':', args);
@@ -562,23 +607,30 @@ io.on('connection', (socket) => {
     }
   }
 
-  if (sessionIdToUsername.has(sessionId)) {
-    const username = sessionIdToUsername.get(sessionId);
-    socket.emit('login.success', username);
-    onConnect(username);
-  } else {
-    socket.on('login.submit', (username) => {
-      // check if username is unique
-      if (!usernameToSessionId.has(username)) {
-        sessionIdToUsername.set(sessionId, username);
-        usernameToSessionId.set(username, sessionId);
-        socket.emit('login.success', username);
-        onConnect(username);
-      } else {
-        socket.emit('login.username_taken');
-      }
-    });
-  }
+  socket.on('login.submit', (username) => {
+    // check if username is unique
+    if (!usernameToSessionId.has(username)) {
+      sessionIdToUsername.set(sessionId, username);
+      usernameToSessionId.set(username, sessionId);
+      socket.emit('login.success', username);
+      onConnect(username);
+      console.log('Logged In');
+    } else {
+      socket.emit('login.username_taken');
+    }
+  });
+
+  socket.on('game.reconnect', (username) => {
+    if (!lobby.includes(username)) {
+      socket.emit('client.reset');
+    } else if (
+      state === null ||
+      state.players[username].status === STATUS_OFFLINE
+    ) {
+      onConnect(username);
+      console.log('Reconnected');
+    }
+  });
 });
 
 server.listen(8000, () => {

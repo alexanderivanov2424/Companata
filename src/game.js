@@ -9,6 +9,7 @@ import {
 
 import { Player as MPlayer, Bag } from './server/common/model.js';
 import { socket } from './socket.js';
+import { Timer } from './timer.js';
 
 import {
   ACTION_SELECTION,
@@ -16,6 +17,7 @@ import {
   PAY_PASS,
   TARGETING,
   VERSUS,
+  VERSUS_HOLD,
   STATUS_OFFLINE,
   ITEM_TO_HOVER,
   getBidWinner,
@@ -142,11 +144,16 @@ function ButtonBox({ phase, turn, target }) {
       break;
     case VERSUS:
       if (owner === turn || owner === target) {
-        if (!state.players[owner].pot.isEmpty()) {
+        if (
+          !state.players[owner].pot.isEmpty() ||
+          state.players[owner].coinCount() === 0
+        ) {
           buttons = [<SubmitBidButton key="SubmitBidButton" />];
         }
         buttons.push(<CancelBid key="CancelBid" />);
       }
+      break;
+    case VERSUS_HOLD:
       break;
     default:
       console.error(`unrecognized phase ${phase}`);
@@ -187,9 +194,9 @@ function Middle({ players }) {
   );
 }
 
-function Timer({ timer }) {
-  return <p className="timer">{timer}</p>;
-}
+// function Timer({ timer }) {
+//   return <p className="timer">{timer}</p>;
+// }
 
 function Role({ roleType }) {
   return (
@@ -406,16 +413,50 @@ function Seat({ inner, radius, angle, children }) {
   );
 }
 
-function Winner({ winner }) {
+function GameResult({ winner, isTieGame }) {
+  if (isTieGame) {
+    return (
+      <div className="winner">
+        <p className="winner-text">It's a TIE!</p>
+      </div>
+    );
+  } else {
+    return (
+      <div className="winner">
+        <p className="winner-text">
+          {winner}
+          <br />
+          <br />
+          Wins!
+        </p>
+      </div>
+    );
+  }
+}
+
+function RestartGame() {
   return (
-    <div className="winner">
-      <p className="winner-text">
-        {winner}
-        <br />
-        <br />
-        Wins!
-      </p>
-    </div>
+    <button
+      className="restart-game"
+      onClick={() => socket.emit('game.restart')}
+    >
+      Restart Game
+    </button>
+  );
+}
+
+const tableTypes = ['none', 'wood', 'metal', 'plastic'];
+// <!--Essential to all function DO NOT DELETE-->
+function EssentialButton({ tableTypeIndex, setTableTypeIndex }) {
+  return (
+    <button
+      className="essential-button"
+      onClick={() =>
+        setTableTypeIndex((tableTypeIndex + 1) % tableTypes.length)
+      }
+    >
+      This is the Game
+    </button>
   );
 }
 
@@ -423,6 +464,7 @@ export default function GameScreen() {
   const owner = useOwner();
   const lobby = useLobby();
   const [state, setState] = useState(null);
+  const [tableTypeIndex, setTableTypeIndex] = useState(0);
 
   useEffect(() => {
     // TODO: top level await before rendering?
@@ -451,16 +493,27 @@ export default function GameScreen() {
     return null;
   }
 
-  const { turn, phase, stand, target, timer, players, winner } = state;
+  const {
+    turn,
+    phase,
+    stand,
+    target,
+    timer,
+    totalTime,
+    players,
+    winner,
+    isTieGame,
+  } = state;
 
   return (
     <ClientGameStateContext.Provider value={state}>
       <div className="room">
         <div className="table">
-          {/* <img
-          className="table-texture"
-          src={`./icons/table/${tableTypes[tableTypeIndex]}.jpg`}
-        ></img> */}
+          <img
+            className="table-texture"
+            src={`./icons/table/${tableTypes[tableTypeIndex]}.jpg`}
+            alt={`${tableTypeIndex}`}
+          ></img>
           {lobby.map((key, i) => (
             <Seat
               radius={400}
@@ -474,13 +527,20 @@ export default function GameScreen() {
           ))}
           <Middle players={players} />
           <Stand stand={stand} />
-          {state.phase === BIDDING && <Timer timer={timer} />}
+          {state.phase === BIDDING && (
+            <Timer timer={timer} totalTime={totalTime} />
+          )}
         </div>
-        {winner ? (
-          <Winner winner={winner} />
+        {winner || isTieGame ? (
+          <GameResult winner={winner} isTieGame={isTieGame} />
         ) : (
           <ButtonBox phase={phase} turn={turn} target={target} />
         )}
+        <EssentialButton
+          tableTypeIndex={tableTypeIndex}
+          setTableTypeIndex={setTableTypeIndex}
+        />
+        {lobby[0] === owner ? <RestartGame /> : null}
       </div>
     </ClientGameStateContext.Provider>
   );

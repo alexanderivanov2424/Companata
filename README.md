@@ -20,35 +20,8 @@ How to Run (bc I forget):
 Kill Ngrok sessions:
 taskkill /f /im ngrok.exe
 
-
-
-//TODO:
-// P1:
-// Targeting when have no money
-// Skip players with no actions
-// items to make sure that someone can win
-// owner not being set properly (ToggleScreenButton needs this)
-
-// P2:
-// restart game button
-// animations
-// auto end bid if everyone cancels
-
-// P3:
-// redo button box logic (very messy)
-// legend for the items (maybe hover text)
-
-var state = {
-turn: '',
-turnCounter: 0,
-phase: ACTION_SELECTION,
-stand: [],
-target: '', //person who bid the most or target in Targeting phase
-timer: 0,
-confirms: [],
-players: {},
-stashEmpty: false,
-};
+P2:
+better timer
 
 More Items:
 ice cream

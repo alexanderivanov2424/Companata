@@ -1,0 +1,32 @@
+:root {
+  --timer-dot-diameter: 200px;
+  --timer-border-width: 4px;
+  --timer-default-color: gainsboro;
+  --timer-completion-color: rgb(70, 209, 207);
+}
+
+.circle-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--timer-dot-diameter);
+  height: var(--timer-dot-diameter);
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.circle-container__background {
+  fill: none;
+  stroke: var(--timer-default-color);
+  stroke-width: var(--timer-border-width);
+}
+
+.circle-container__progress {
+  fill: none;
+  stroke-linecap: round;
+  stroke: var(--timer-completion-color);
+  stroke-dasharray: 100 100;
+  stroke-linecap: round;
+  stroke-width: var(--timer-border-width);
+  /* transition: stroke-dashoffset 1s ease-in-out;
+  will-change: transform; */
+}
