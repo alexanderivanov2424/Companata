@@ -1,23 +1,3 @@
-~ Notes ~
-
-backend: (need websockets)
-python - quart , flask
-nodejs - socket.io \*\*\* start here
-
-Server:
-full game state + logic
-on any change:
-send full state to all clients
-
-broadcastGameState() send gamestate json to all clients
-
-Clients:
-
-- send actions to server
-
-drawGameState()
-sendAction() send Json to server
-
 How to Run (bc I forget):
 
 1. Ngrok
@@ -25,15 +5,22 @@ How to Run (bc I forget):
 
 - navigate to ngrok path (probably in downloads)
 - run ngrok.exe
-- run command: ngrok http 8000
+- run command: ngrok http 3000
   If you have ngrok in your path like a normal person:
-- run command: ngrok http 8000
+- run command: ngrok http 3000
 
-2. Server
-   node index.js
+2. Backend
+   navigate to: compananta/src/server
+   run: npm start
+
+3. Server
+   navigate to: compananta/
+   run: npm start
 
 Kill Ngrok sessions:
 taskkill /f /im ngrok.exe
+
+
 
 //TODO:
 // P1:

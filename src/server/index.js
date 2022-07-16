@@ -2,7 +2,6 @@ import { createServer } from 'http';
 
 import express from 'express';
 import session from 'express-session';
-import bodyParser from 'body-parser';
 import { Server } from 'socket.io';
 
 import {
@@ -21,8 +20,8 @@ import {
   ITEMS,
   GetWinnerName,
   getBidWinner,
-} from './public/common.mjs';
-import { Player } from './public/model.mjs';
+} from './common/helpers.js';
+import { Player } from './common/model.js';
 
 const app = express();
 const server = createServer(app);
@@ -36,58 +35,6 @@ const sessionMiddleware = session({
 // -------------- Express Middleware --------------
 
 app.use(sessionMiddleware);
-app.use(bodyParser.urlencoded({ extended: true }));
-
-// redirect any path under /play to login page if not logged in
-// app.use('/play', (req, res, next) => {
-//   const sessionId = req.session.id;
-//   const username = sessionIdToUsername.get(sessionId);
-
-//   if (username) {
-//     req.session.username = username;
-//     next();
-//   } else {
-//     console.log(`redirecting session ${sessionId} to login page`);
-//     res.redirect('/');
-//   }
-// });
-
-// serve static files in /public directory
-app.use(express.static('public', { extensions: ['html'] }));
-
-// -------------- Express Routes ------------------
-
-app.post('/login', (req, res) => {
-  const sessionId = req.session.id;
-  const { username } = req.body;
-
-  if (!usernameToSessionId.has(username)) {
-    console.log(`${username} logged in from session ${sessionId}`);
-    sessionIdToUsername.set(sessionId, username);
-    usernameToSessionId.set(username, sessionId);
-
-    req.session.username = username;
-    // res.redirect('/play/lobby');
-  } else {
-    console.log(`username ${username} is taken`);
-    socket.emit('lobby.username_taken');
-  }
-});
-
-app.post('/logout', (req, res) => {
-  const sessionId = req.session.id;
-  const username = sessionIdToUsername.get(sessionId);
-
-  console.log(`${username} logged out from session ${sessionId}`);
-  sessionIdToUsername.delete(sessionId, username);
-  usernameToSessionId.delete(username, sessionId);
-
-  req.session.destroy(() => {
-    // disconnect all Socket.IO connections linked to this session ID
-    io.to(sessionId).disconnectSockets();
-    res.status(204).end();
-  });
-});
 
 // -------------- Server State --------------------
 
@@ -135,9 +82,9 @@ function InitGameState(lobby) {
     },
   };
 
-  console.log(DEBUG, lobby, ITEMS);
+  console.log({ DEBUG, lobby, ITEMS });
   if (DEBUG) {
-    for (const player of state.players) {
+    for (const player of Object.values(state.players)) {
       console.log(player.name);
       for (const item of ITEMS) {
         console.log(item);
@@ -268,7 +215,7 @@ function BiddingTimeout() {
     return;
   }
   state.target = highestBidder.name;
-  for (const player of state.players) {
+  for (const player of Object.values(state.players)) {
     if (player !== state.targetPlayer) {
       player.sendPot(player);
     }
@@ -282,7 +229,7 @@ function Event_StartTargetingPhase() {
     return;
   }
   const canTarget = [...state.currentPlayer.items.keys()].some((item) =>
-    [...state.players].some((player) =>
+    [...Object.values(state.players)].some((player) =>
       state.currentPlayer.canTarget(player, item)
     )
   );
@@ -425,17 +372,17 @@ function Event_ToggleScreen(thisPlayer) {
 function InfuseFunds(level) {
   switch (level) {
     case 2:
-      for (const player of state.players) {
+      for (const player of Object.values(state.players)) {
         player.wallet.add(5, 3).add(10, 3).add(25, 2);
       }
       break;
     case 4:
-      for (const player of state.players) {
+      for (const player of Object.values(state.players)) {
         player.wallet.add(5, 3).add(10, 3).add(25, 2).add(50, 1);
       }
       break;
     case 6:
-      for (const player of state.players) {
+      for (const player of Object.values(state.players)) {
         player.wallet.add(0, 1).add(25, 4).add(50, 2);
       }
       break;
@@ -456,11 +403,13 @@ function filterGhosts() {
 
 // -------------- Socket.IO Events ----------------
 
-const io = new Server(server);
+const io = new Server(server, {
+  path: '/socket',
+});
 
 io.use((socket, next) => sessionMiddleware(socket.request, {}, next));
 
-function lobbyOnConnect(socket, username) {
+function lobbyOnConnect(socket, username, gameOnConnect) {
   if (!lobby.includes(username)) {
     lobby.push(username);
     io.emit('lobby.update.lobby_list', lobby);
@@ -497,17 +446,21 @@ function lobbyOnConnect(socket, username) {
     for (const socket of await io.fetchSockets()) {
       socket.emit(
         'game.update.state',
-        JSON.stringify({ owner: socket.username, lobby, state })
+        JSON.stringify(state)
       );
     }
   }
 
-  socket.on('lobby.start_game', () => {
+  socket.on('lobby.start_game', async () => {
     const host = lobby[0];
     if (username === host) {
-      io.emit('redirect', '/play/game');
+      io.emit('game_started');
       InitGameState(lobby);
       setInterval(sendGameState, 100);
+      for (const socket of await io.fetchSockets()) {
+        gameOnConnect(socket, socket.username);
+        console.log("GAME STARTING", socket, socket.username);
+      }
     }
   });
 }
@@ -533,7 +486,9 @@ function gameOnConnect(socket, username) {
     Event_StartBiddingPhase();
   });
 
+  console.log("socket setup");
   socket.on('game.action.bid', (value) => {
+    console.log("bid made");
     Event_MakeBid(thisPlayer, value);
   });
 
@@ -569,64 +524,60 @@ function gameOnConnect(socket, username) {
 io.on('connection', (socket) => {
   const req = socket.request;
   const sessionId = req.session.id;
-  const username = sessionIdToUsername.get(sessionId);
 
-  // filter ghosts
-  if (!username) {
-    return;
+  function onConnect(username) {
+    // filter ghosts
+    if (!username) {
+      console.warn('spooky ghost');
+      return;
+    }
+    socket.username = username;
+
+    console.log(`${username} connected`);
+    socket.on('disconnect', () => {
+      console.log(`${username} disconnected`);
+    });
+
+    socket.join(sessionId);
+
+    // socket.use((_, next) => {
+    //   req.session.reload((err) => {
+    //     if (err) {
+    //       console.log(err);
+    //       socket.disconnect();
+    //     } else {
+    //       next();
+    //     }
+    //   });
+    // });
+
+    socket.onAny((event, ...args) => {
+      console.log(event, username + ':', args);
+    });
+
+    if (!GAME_STARTED) {
+      lobbyOnConnect(socket, username, gameOnConnect);
+    } else {
+      gameOnConnect(socket, username);
+    }
   }
-  socket.username = username;
 
   if (sessionIdToUsername.has(sessionId)) {
-    //TODO
-    // set up lobby/game event handlers
+    const username = sessionIdToUsername.get(sessionId);
+    socket.emit('login.success', username);
+    onConnect(username);
   } else {
     socket.on('login.submit', (username) => {
       // check if username is unique
       if (!usernameToSessionId.has(username)) {
         sessionIdToUsername.set(sessionId, username);
         usernameToSessionId.set(username, sessionId);
-        socket.emit('login.success');
+        socket.emit('login.success', username);
+        onConnect(username);
       } else {
         socket.emit('login.username_taken');
       }
     });
-  }
-
-  /*
-  if logged in:
-    set up lobby/game event handlers
-  else:
-    on submit:
-      set up lobby/game event handlers
-      add id => username to sessionIdToUsername
-  */
-
-  console.log(`${username} connected`);
-  socket.on('disconnect', () => {
-    console.log(`${username} disconnected`);
-  });
-
-  socket.join(sessionId);
-
-  socket.use((_, next) => {
-    req.session.reload((err) => {
-      if (err) {
-        socket.disconnect();
-      } else {
-        next();
-      }
-    });
-  });
-
-  socket.onAny((event, ...args) => {
-    console.log(event, username + ':', args);
-  });
-
-  if (!GAME_STARTED) {
-    lobbyOnConnect(socket, username);
-  } else {
-    gameOnConnect(socket, username);
   }
 });
 

@@ -2,37 +2,12 @@
 <html>
   <head>
     <title>Game</title>
-    <link rel="stylesheet" href="game.css" />
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests"> 
   </head>
-
+  
   <body>
-    <button class="essential-button" id="secret">This is the Game</button>
+    <!-- <button class="essential-button" id="secret">This is the Game</button> -->
     <!--Essential to all function DO NOT DELETE-->
     <div id="root"></div>
-
-    <script
-      src="https://unpkg.com/react@18/umd/react.development.js"
-      crossorigin
-    ></script>
-    <script
-      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
-      crossorigin
-    ></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
-    <script type="text/babel" data-type="module" src="../socket.mjs"></script>
-    <script type="text/babel" data-type="module" src="../common.mjs"></script>
-    <script type="text/babel" data-type="module" src="../model.mjs"></script>
-    <script
-      type="text/babel"
-      data-type="module"
-      src="./context_hooks.js"
-    ></script>
-    <script type="text/babel" data-type="module" src="./game.js"></script>
-    <script
-      type="text/babel"
-      data-type="module"
-      src="./game_screen.js"
-    ></script>
   </body>
 </html>
