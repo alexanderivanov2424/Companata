@@ -1,4 +1,5 @@
-import { STATUS_ONLINE, STACK_SIZE, STACKS_TO_WIN } from './helpers.js';
+import { STATUS_ONLINE } from './helpers.js';
+import { STACK_SIZE, STACKS_TO_WIN } from './settings.js';
 
 export class Bag extends Map {
   isEmpty() {

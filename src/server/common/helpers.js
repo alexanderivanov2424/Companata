@@ -1,3 +1,5 @@
+import { EXPECTED_PLAYERS, DIFFICULTY, STACKS_TO_WIN } from './settings.js';
+
 export const DEBUG = false;
 
 export const ACTION_SELECTION = 'ActionSelection';
@@ -7,24 +9,21 @@ export const TARGETING = 'Targeting';
 export const VERSUS = 'Versus';
 export const VERSUS_HOLD = 'VersusHold';
 
+/*
+Phases:
+ActionSelection - select if next phase is Bidding (big for what is on the stand) or Targeting (target another players item)
+Bidding - new item is added to stand, everyone except current turn bids for item(s) on stand
+PayPass - current turn either buys item on stand or gives it to target but takes money
+Targeting - current turn selects whos item they want to target
+Versus - current turn and target each place bids for items on stand
+*/
+
 export const STATUS_OFFLINE = 'Offline';
 export const STATUS_ONLINE = 'Online';
 
-const EXPECTED_PLAYERS = 2;
-const DIFFICULTY = 0.25;
-/*
-0 - cut throat 
-0.25 - very hard
-0.5 -  hard
-0.75 - normal
-1.0 - easy
-2.0 - childs play
-*/
-
-export const STACK_SIZE = 4;
 export const BIDDING_TIME = 10 + Math.ceil(10 * DIFFICULTY);
 export const VERSUS_HOLD_TIME = 3;
-export const STACKS_TO_WIN = 4;
+
 export const NUM_ITEMS =
   EXPECTED_PLAYERS * (STACKS_TO_WIN - 1) +
   Math.ceil(DIFFICULTY * EXPECTED_PLAYERS);

@@ -1,90 +1,101 @@
-How to Run (bc I forget):
+```
+   _____                                                       _
+  / ____|                                                     | |
+ | |        ___    _ __ ___    _ __     __ _   _ __     __ _  | |_    __ _
+ | |       / _ \  | '_ ` _ \  | '_ \   / _` | | '_ \   / _` | | __|  / _` |
+ | |____  | (_) | | | | | | | | |_) | | (_| | | | | | | (_| | | |_  | (_| |
+  \_____|  \___/  |_| |_| |_| | .__/   \__,_| |_| |_|  \__,_|  \__|  \__,_|
+                              | |
+                              |_|                               O N L I N E
+```
 
-1. Ngrok
-   If you just have ngrok downloaded as an exe:
+## Acknowledgment
 
-- navigate to ngrok path (probably in downloads)
-- run ngrok.exe
-- run command: ngrok http 3000
-  If you have ngrok in your path like a normal person:
-- run command: ngrok http 3000
+---
 
-2. Backend
-   navigate to: compananta/src/server
-   run: npm start
+Massive thanks to Yiotro for inspiring us to make a networked version of his game Companata. You can find the original game and many of Yiotro's other amazing creations here:
+https://play.google.com/store/apps/developer?id=Yiotro&hl=en_US&gl=US
 
-3. Server
-   navigate to: compananta/
-   run: npm start
+## Visuals
 
-Kill Ngrok sessions:
-taskkill /f /im ngrok.exe
+---
 
-P2:
-better timer
+![Example Game](GameExample.png)
 
-More Items:
-ice cream
-bike
-baseball
-skateboard
-basketball
-borshe
-burger
-football
-lollipop
+## Description
 
-fork
-knife
-spoon
-clock
-cactus
-boat
-helicopter
-rocket
-penguin
-bell
-medal
-bitcoin
-map
-top (spinner)
-birthday hat
-kite
-needle
-thread
-teddy bear
-top hat
-high heel
-fries
-high heel shoe
-diamond
-microphone
-saxaphone
-tuba
-violin
-ring
-handbag
-backback
-phone
-camera
-candle
-book
-looking glass
-flashlight
-glasses
-saw
-scissors
-squirell
-brocolli
-stool
-toilet
-bandaid
-microscope
-telescope
+---
 
-Phases:
-ActionSelection - select if next phase is Bidding (big for what is on the stand) or Targeting (target another players item)
-Bidding - new item is added to stand, everyone except current turn bids for item(s) on stand
-PayPass - current turn either buys item on stand or gives it to target but takes money
-Targeting - current turn selects whos item they want to target
-Versus - current turn and target each place bids for items on stand
+Companata is a game about bidding, mind games, and last second money grabs. Your goal is to get four sets of four items but, there aren't quite enough items to go around. Will you be the first to complete your collection or will your friends outbid you at the last second.
+
+## Rules
+
+Here at _games made quick_ industries we firmly believe that playing and learning the rules as you go is the best way to play a game. As an added bonus you avoid the pointless hassle of reading rules and then having to explain them again halfway through the game.
+
+## Settings
+
+---
+
+In <span style="color:rgb(240, 110, 84)">/src/server/common/settiings.js</span> the following values can be adjusted to customize the game.
+
+<span style="color:rgb(102, 240, 84)">EXPECTED_PLAYERS</span> - The number of people playing  
+<span style="color:rgb(102, 240, 84)">STACK_SIZE</span> - Amount of each item  
+<span style="color:rgb(102, 240, 84)">STACKS_TO_WIN</span> - Number of items needed to win  
+<span style="color:rgb(102, 240, 84)">DIFFICULTY</span> - Number representing the difficulty
+
+More details about each of these settings can be found in the file.
+
+## Project status
+
+---
+
+Done and dusted
+
+## Authors
+
+---
+
+- Alexander Ivanov
+- Jason Crowley
+
+## License
+
+---
+
+## [MIT](https://choosealicense.com/licenses/mit/)
+
+<hr style="border:2px solid">
+
+# How to Run
+
+## Backend
+
+This is where the game logic happens
+
+> navigate to: compananta/src/server  
+> run: npm start
+
+## Server
+
+This is what serves the page to the client
+
+> navigate to: compananta/  
+> run: npm start
+
+## Ngrok
+
+We used ngrok so friends not on our wifi can also play
+
+ngrok downloaded as an exe:
+
+> navigate to ngrok download path
+> start ngrok.exe  
+> run: ngrok http 3000
+
+If you have ngrok in your path like a normal person:
+
+> run: ngrok http 3000
+
+To kill loose ngrok sessions on windows:
+
+> taskkill /f /im ngrok.exe

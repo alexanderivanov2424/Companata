@@ -15,7 +15,6 @@ import {
   VERSUS_HOLD,
   STATUS_OFFLINE,
   STATUS_ONLINE,
-  STACK_SIZE,
   BIDDING_TIME,
   VERSUS_HOLD_TIME,
   ITEMS,
@@ -24,6 +23,9 @@ import {
   canPlayerTarget,
   CanSomeoneBid,
 } from './common/helpers.js';
+
+import { STACK_SIZE } from './common/settings.js';
+
 import { Player } from './common/model.js';
 
 const app = express();
