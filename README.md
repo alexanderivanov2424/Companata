@@ -11,7 +11,7 @@
 
 ## Acknowledgment
 
-Massive thanks to Yiotro for inspiring us to make a networked version of his game Companata. You can find the original game and many of Yiotro's other amazing creations here:
+Massive thanks to Yiotro for inspiring us to make a networked version of the game Companata. You can find the original game and many of Yiotro's other amazing creations here:
 https://play.google.com/store/apps/developer?id=Yiotro&hl=en_US&gl=US
 
 ## Visuals
@@ -43,8 +43,8 @@ Done and dusted
 
 ## Authors
 
-- Alexander Ivanov
-- Jason Crowley
+- Alexander Ivanov (https://github.com/alexanderivanov2424)
+- Jason Crowley (https://github.com/jason-crowley)
 
 ## License
 
