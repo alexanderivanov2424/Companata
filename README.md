@@ -11,20 +11,14 @@
 
 ## Acknowledgment
 
----
-
 Massive thanks to Yiotro for inspiring us to make a networked version of his game Companata. You can find the original game and many of Yiotro's other amazing creations here:
 https://play.google.com/store/apps/developer?id=Yiotro&hl=en_US&gl=US
 
 ## Visuals
 
----
-
 ![Example Game](GameExample.png)
 
 ## Description
-
----
 
 Companata is a game about bidding, mind games, and last second money grabs. Your goal is to get four sets of four items but, there aren't quite enough items to go around. Will you be the first to complete your collection or will your friends outbid you at the last second.
 
@@ -33,8 +27,6 @@ Companata is a game about bidding, mind games, and last second money grabs. Your
 Here at _games made quick_ industries we firmly believe that playing and learning the rules as you go is the best way to play a game. As an added bonus you avoid the pointless hassle of reading rules and then having to explain them again halfway through the game.
 
 ## Settings
-
----
 
 In <span style="color:rgb(240, 110, 84)">/src/server/common/settiings.js</span> the following values can be adjusted to customize the game.
 
@@ -47,20 +39,14 @@ More details about each of these settings can be found in the file.
 
 ## Project status
 
----
-
 Done and dusted
 
 ## Authors
-
----
 
 - Alexander Ivanov
 - Jason Crowley
 
 ## License
-
----
 
 ## [MIT](https://choosealicense.com/licenses/mit/)
 
