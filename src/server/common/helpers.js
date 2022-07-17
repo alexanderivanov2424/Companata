@@ -1,4 +1,4 @@
-export const DEBUG = true;
+export const DEBUG = false;
 
 export const ACTION_SELECTION = 'ActionSelection';
 export const BIDDING = 'Bidding';
@@ -188,11 +188,11 @@ export const ITEM_TO_HOVER = {
   telescope: 'Telescope',
 };
 
-//export const ITEMS_ALL = shuffle([...Object.keys(ITEM_TO_HOVER)]);
-export const ITEMS_ALL = [...Object.keys(ITEM_TO_HOVER)];
+export const ITEMS_ALL = shuffle([...Object.keys(ITEM_TO_HOVER)]);
+//export const ITEMS_ALL = [...Object.keys(ITEM_TO_HOVER)];
 
-//export const ITEMS = ITEMS_ALL.slice(0, NUM_ITEMS);
-export const ITEMS = ITEMS_ALL.slice(120, 145);
+export const ITEMS = ITEMS_ALL.slice(0, NUM_ITEMS);
+//export const ITEMS = ITEMS_ALL.slice(120, 145);
 
 export function GetWinnerName(state) {
   return (
