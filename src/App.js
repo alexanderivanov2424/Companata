@@ -8,6 +8,7 @@ import GameScreen from './game.js';
 import { socket } from './socket.js';
 
 import './game.css';
+import './items.css';
 
 function useLocalStorage(key, initialValue) {
   // State to store our value

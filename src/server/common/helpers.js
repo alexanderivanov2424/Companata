@@ -1,4 +1,5 @@
-export const DEBUG = false;
+export const DEBUG = true;
+
 export const ACTION_SELECTION = 'ActionSelection';
 export const BIDDING = 'Bidding';
 export const PAY_PASS = 'PayPass';
@@ -122,12 +123,76 @@ export const ITEM_TO_HOVER = {
   wine: 'Wine',
   cheese: 'Cheese',
   clouds: 'Clouds',
-  dice: 'Dice',
+  dice: 'Dice', //
+  icecream: 'Icecream',
+  bike: 'Bike',
+  skateboard: 'Stakeboard',
+  baseball: 'Baseball',
+  basketball: 'Basketball',
+  borshe: 'Borshe',
+  Pierogi: 'Pierogi',
+  matzah: 'Matzah',
+  paella: 'Paella',
+  taco: 'Taco',
+  burger: 'Burger',
+  football: 'Football',
+  lollipop: 'Lollipop',
+  fork: 'Fork',
+  knife: 'Knife',
+  spoon: 'Spoon',
+  clock: 'Clock',
+  cactus: 'Cactus',
+  boat: 'Boat',
+  helicopter: 'Helicopter',
+  rocket: 'Rocket',
+  penguin: 'Penguin',
+  bell: 'Bell',
+  medal: 'Medal',
+  bitcoin: 'Bitcoin',
+  map: 'Map',
+  top: 'Spinning Top',
+  birthday: 'Birthday Hat',
+  kite: 'Kite',
+  needle: 'Needle',
+  thimble: 'Thimble',
+  syringe: 'syringe',
+  thread: 'Thread',
+  teddy: 'Teady Bear',
+  tophat: 'Top Hat',
+  heels: 'Heels',
+  fries: 'Fries',
+  diamond: 'Diamond',
+  microphone: 'Microphone',
+  sax: 'Saxophone',
+  tuba: 'Tuba',
+  violin: 'Violin',
+  ring: 'Ring',
+  handbag: 'Handbag',
+  backpack: 'Backpack',
+  phone: 'Phone',
+  camera: 'Camera',
+  candle: 'Candle',
+  book: 'Book',
+  dune: 'Dune',
+  looking: 'Looking Glass',
+  flashlight: 'Flashlight',
+  glasses: 'Glasses',
+  saw: 'Saw',
+  scissors: 'Scissors',
+  squirrel: 'Squirrel',
+  broccoli: 'Broccoli',
+  stool: 'Stool',
+  toilet: 'Toilet',
+  bandaid: 'Bandaid',
+  microscope: 'Microsope',
+  telescope: 'Telescope',
 };
 
-export const ITEMS_ALL = shuffle([...Object.keys(ITEM_TO_HOVER)]);
+//export const ITEMS_ALL = shuffle([...Object.keys(ITEM_TO_HOVER)]);
+export const ITEMS_ALL = [...Object.keys(ITEM_TO_HOVER)];
 
-export const ITEMS = ITEMS_ALL.slice(0, NUM_ITEMS);
+//export const ITEMS = ITEMS_ALL.slice(0, NUM_ITEMS);
+export const ITEMS = ITEMS_ALL.slice(120, 145);
 
 export function GetWinnerName(state) {
   return (
